@@ -1,0 +1,66 @@
+<%
+  const currentPage = parseInt(pagination.page, 10) || 1;
+  const totalPages = parseInt(pagination.totalPages, 10) || 1;
+  const currentLimit = parseInt(pagination.limit, 10) || 20;
+  
+  // 페이지 블록 계산 (한 번에 최대 10개 번호 표시)
+  const blockSize = 10;
+  const startPage = Math.floor((currentPage - 1) / blockSize) * blockSize + 1;
+  const endPage = Math.min(startPage + blockSize - 1, totalPages);
+
+  // URL 생성 함수 (기존 쿼리 파라미터 보존)
+  function makeUrl(targetPage) {
+    const p = new URLSearchParams();
+    if (typeof filters !== 'undefined' && filters) {
+      Object.keys(filters).forEach(k => {
+        if (filters[k] !== undefined && filters[k] !== null && filters[k] !== '') {
+          p.set(k, filters[k]);
+        }
+      });
+    }
+    p.set('page', targetPage);
+    p.set('limit', currentLimit);
+    return `${baseUrl}?${p.toString()}`;
+  }
+%>
+
+<% if (pagination && pagination.total > 0) { %>
+  <nav aria-label="Page navigation">
+    <ul class="pagination pagination-sm mb-0 align-items-center">
+      <!-- 1. 맨 처음 (<<) -->
+      <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="맨 처음">
+        <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(1) %>" aria-label="First">
+          <i class="bi bi-chevron-double-left"></i>
+        </a>
+      </li>
+
+      <!-- 2. 이전 블록 / 이전 (<) -->
+      <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="이전">
+        <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(currentPage - 1) %>" aria-label="Previous">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+
+      <!-- 3. 페이지 번호 (최대 10개) -->
+      <% for (let p = startPage; p <= endPage; p++) { %>
+        <li class="page-item <%= currentPage === p ? 'active' : '' %>">
+          <a class="page-link" href="<%= makeUrl(p) %>"><%= p %></a>
+        </li>
+      <% } %>
+
+      <!-- 4. 다음 (>) -->
+      <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="다음">
+        <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(currentPage + 1) %>" aria-label="Next">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+
+      <!-- 5. 맨 끝 (>>) -->
+      <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="맨 끝">
+        <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(totalPages) %>" aria-label="Last">
+          <i class="bi bi-chevron-double-right"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+<% } %>

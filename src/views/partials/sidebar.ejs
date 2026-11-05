@@ -1,0 +1,66 @@
+<!-- Sidebar Navigation -->
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm min-vh-100 p-3">
+  <div class="position-sticky pt-2">
+    <div class="text-uppercase text-secondary fw-semibold small px-3 mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+      메인 메뉴
+    </div>
+    <ul class="nav flex-column gap-1">
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'dashboard' ? 'active bg-primary text-white' : 'text-dark' %>" href="/dashboard">
+          <i class="bi bi-speedometer2"></i>
+          <span>대시보드</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'stats' ? 'active bg-primary text-white' : 'text-dark' %>" href="/stats">
+          <i class="bi bi-bar-chart-line"></i>
+          <span>통계 분석</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'data' ? 'active bg-primary text-white' : 'text-dark' %>" href="/data">
+          <i class="bi bi-table"></i>
+          <span>데이터 조회</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'users' ? 'active bg-primary text-white' : 'text-dark' %>" href="/users">
+          <i class="bi bi-people-fill"></i>
+          <span>회원 관리 (app_user)</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/activations">
+          <i class="bi bi-phone-fill"></i>
+          <span>개통 이력 (activation_log)</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'user-activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/user-activations">
+          <i class="bi bi-person-lines-fill"></i>
+          <span>회원 개통 이력</span>
+        </a>
+      </li>
+    </ul>
+
+    <hr class="my-4">
+
+    <div class="text-uppercase text-secondary fw-semibold small px-3 mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+      시스템 정보
+    </div>
+    <div class="p-3 bg-light rounded-3 small">
+      <div class="text-muted mb-1">데이터베이스:</div>
+      <div class="fw-bold mb-2">
+        <% if (dbStatus && dbStatus.connected) { %>
+          <span class="text-success"><i class="bi bi-check-circle-fill"></i> MySQL 활성</span>
+        <% } else { %>
+          <span class="text-warning-emphasis"><i class="bi bi-info-circle-fill"></i> In-Memory Mock</span>
+        <% } %>
+      </div>
+      <div class="text-muted" style="font-size: 0.75rem;">
+        추후 <code>.env</code> 파일의 DB 정보를 실제 MySQL 설정으로 변경하면 즉시 연동됩니다.
+      </div>
+    </div>
+  </div>
+</nav>
+

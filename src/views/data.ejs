@@ -1,0 +1,354 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+    <div>
+      <h1 class="h3 fw-bold mb-1">데이터 조회 및 관리</h1>
+      <p class="text-muted small mb-0">조건별 데이터 검색, 필터링, 엑셀/CSV 다운로드 및 파일 업로드를 지원합니다.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+      <!-- Member Excel Upload Button -->
+      <a href="/users" class="btn btn-sm btn-success">
+        <i class="bi bi-file-earmark-excel-fill me-1"></i> 회원 엑셀 업로드 (app_user)
+      </a>
+      <!-- CSV Download Button -->
+      <a href="/data/download?keyword=<%= encodeURIComponent(filters.keyword || '') %>&category=<%= encodeURIComponent(filters.category || '') %>&status=<%= encodeURIComponent(filters.status || '') %>" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV 다운로드
+      </a>
+      <!-- Upload Modal Trigger -->
+      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        <i class="bi bi-cloud-arrow-up me-1"></i> 데이터 업로드
+      </button>
+      <!-- New Entry Modal Trigger -->
+      <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        <i class="bi bi-plus-lg me-1"></i> 신규 등록
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filter Form -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="/data" class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <input type="text" name="keyword" class="form-control form-control-sm" placeholder="건명, 관리코드, 고객명 검색..." value="<%= filters.keyword || '' %>">
+        </div>
+
+        <div class="col-md-3">
+          <select name="category" class="form-select form-select-sm">
+            <option value="">모든 카테고리</option>
+            <% (categories || []).forEach(cat => { %>
+              <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <select name="status" class="form-select form-select-sm">
+            <option value="">모든 상태</option>
+            <option value="COMPLETED" <%= filters.status === 'COMPLETED' ? 'selected' : '' %>>완료 (COMPLETED)</option>
+            <option value="PENDING" <%= filters.status === 'PENDING' ? 'selected' : '' %>>대기 (PENDING)</option>
+            <option value="CANCELLED" <%= filters.status === 'CANCELLED' ? 'selected' : '' %>>취소 (CANCELLED)</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-sm btn-dark flex-grow-1">
+            <i class="bi bi-funnel me-1"></i> 검색
+          </button>
+          <a href="/data" class="btn btn-sm btn-light border" title="필터 초기화">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Data Table Card -->
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+      <div class="small text-muted">
+        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 (페이지 <%= pagination.page %> / <%= pagination.totalPages || 1 %>)
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">No</th>
+              <th scope="col">관리코드</th>
+              <th scope="col">건명</th>
+              <th scope="col">카테고리</th>
+              <th scope="col" class="text-end">금액</th>
+              <th scope="col">고객/담당자</th>
+              <th scope="col" class="text-center">상태</th>
+              <th scope="col">등록일시</th>
+              <th scope="col" class="pe-4 text-center">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (items && items.length > 0) { %>
+              <% items.forEach((item, index) => { %>
+                <tr>
+                  <td class="ps-4 text-secondary small"><%= (pagination.page - 1) * pagination.limit + (index + 1) %></td>
+                  <td><code><%= item.code %></code></td>
+                  <td class="fw-semibold text-dark"><%= item.title %></td>
+                  <td><span class="badge bg-secondary-subtle text-secondary"><%= item.category %></span></td>
+                  <td class="text-end fw-medium"><%= (item.amount || 0).toLocaleString() %>원</td>
+                  <td><%= item.customer %></td>
+                  <td class="text-center">
+                    <% if (item.status === 'COMPLETED') { %>
+                      <span class="badge bg-success">완료</span>
+                    <% } else if (item.status === 'PENDING') { %>
+                      <span class="badge bg-warning text-dark">대기</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">취소</span>
+                    <% } %>
+                  </td>
+                  <td class="text-muted small"><%= item.createdAt || item.created_at %></td>
+                  <td class="pe-4 text-center">
+                    <button class="btn btn-sm btn-light border btn-view-detail" data-id="<%= item.id %>" data-title="<%= item.title %>" data-code="<%= item.code %>" data-cat="<%= item.category %>" data-amount="<%= item.amount %>" data-customer="<%= item.customer %>" data-status="<%= item.status %>" data-notes="<%= item.notes || '' %>" data-date="<%= item.createdAt || item.created_at %>">
+                      <i class="bi bi-eye"></i> 보기
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                  조건에 일치하는 데이터가 없습니다.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <% if (pagination.totalPages > 1) { %>
+      <div class="card-footer bg-white border-0 py-3 d-flex justify-content-center">
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
+              <a class="page-link" href="/data?page=<%= pagination.page - 1 %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>">이전</a>
+            </li>
+            <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+              <li class="page-item <%= pagination.page === p ? 'active' : '' %>">
+                <a class="page-link" href="/data?page=<%= p %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>"><%= p %></a>
+              </li>
+            <% } %>
+            <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="/data?page=<%= pagination.page + 1 %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>">다음</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<!-- 1. Detail View Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="detailModalTitle">데이터 상세 정보</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-muted">관리코드</dt>
+          <dd class="col-sm-8" id="detailCode">-</dd>
+
+          <dt class="col-sm-4 text-muted">건명</dt>
+          <dd class="col-sm-8 fw-bold" id="detailTitle">-</dd>
+
+          <dt class="col-sm-4 text-muted">카테고리</dt>
+          <dd class="col-sm-8" id="detailCategory">-</dd>
+
+          <dt class="col-sm-4 text-muted">금액</dt>
+          <dd class="col-sm-8" id="detailAmount">-</dd>
+
+          <dt class="col-sm-4 text-muted">고객/담당자</dt>
+          <dd class="col-sm-8" id="detailCustomer">-</dd>
+
+          <dt class="col-sm-4 text-muted">진행상태</dt>
+          <dd class="col-sm-8" id="detailStatus">-</dd>
+
+          <dt class="col-sm-4 text-muted">등록일시</dt>
+          <dd class="col-sm-8" id="detailDate">-</dd>
+
+          <dt class="col-sm-4 text-muted">비고 / 메모</dt>
+          <dd class="col-sm-8" id="detailNotes">-</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="createDataForm">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">신규 데이터 등록</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">건명 (Title) <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control form-control-sm" required placeholder="예: 무선 기계식 키보드">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">카테고리 <span class="text-danger">*</span></label>
+              <select name="category" class="form-select form-select-sm" required>
+                <option value="IT/전자기기">IT/전자기기</option>
+                <option value="가구/인테리어">가구/인테리어</option>
+                <option value="생활가전">생활가전</option>
+                <option value="사무용품">사무용품</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">금액 (원)</label>
+              <input type="number" name="amount" class="form-control form-control-sm" value="0" min="0">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">고객명/담당자 <span class="text-danger">*</span></label>
+              <input type="text" name="customer" class="form-control form-control-sm" required placeholder="홍길동">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">상태</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="PENDING">대기 (PENDING)</option>
+                <option value="COMPLETED">완료 (COMPLETED)</option>
+                <option value="CANCELLED">취소 (CANCELLED)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">비고</label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="메모할 사항이 있다면 입력하세요."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="submit" class="btn btn-sm btn-primary">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="uploadDataForm" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">데이터 일괄 업로드</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">업로드할 파일 선택 (.csv, .xlsx)</label>
+            <input type="file" name="dataFile" class="form-control form-control-sm" accept=".csv, .xlsx, .xls" required>
+            <div class="form-text small">CSV 또는 엑셀 파일을 업로드하여 데이터를 일괄 반영할 수 있습니다.</div>
+          </div>
+          <div id="uploadAlert" class="alert alert-info py-2 small mb-0 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="submit" class="btn btn-sm btn-primary">업로드 시작</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 상세 보기 모달 이벤트 바인딩
+  document.querySelectorAll('.btn-view-detail').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = btn.dataset;
+      document.getElementById('detailCode').innerText = d.code;
+      document.getElementById('detailTitle').innerText = d.title;
+      document.getElementById('detailCategory').innerText = d.cat;
+      document.getElementById('detailAmount').innerText = Number(d.amount).toLocaleString() + '원';
+      document.getElementById('detailCustomer').innerText = d.customer;
+      document.getElementById('detailStatus').innerText = d.status;
+      document.getElementById('detailDate').innerText = d.date;
+      document.getElementById('detailNotes').innerText = d.notes || '-';
+
+      const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+      modal.show();
+    });
+  });
+
+  // 신규 데이터 등록 비동기 처리
+  document.getElementById('createDataForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert('신규 데이터가 성공적으로 등록되었습니다.');
+        location.reload();
+      } else {
+        alert('등록 실패: ' + result.message);
+      }
+    } catch (err) {
+      alert('오류가 발생했습니다: ' + err.message);
+    }
+  });
+
+  // 파일 업로드 비동기 처리
+  document.getElementById('uploadDataForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const alertBox = document.getElementById('uploadAlert');
+
+    try {
+      const res = await fetch('/data/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await res.json();
+      alertBox.classList.remove('d-none');
+      if (result.success) {
+        alertBox.className = 'alert alert-success py-2 small mb-0';
+        alertBox.innerText = result.message;
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        alertBox.className = 'alert alert-danger py-2 small mb-0';
+        alertBox.innerText = '업로드 실패: ' + result.message;
+      }
+    } catch (err) {
+      alertBox.classList.remove('d-none');
+      alertBox.className = 'alert alert-danger py-2 small mb-0';
+      alertBox.innerText = '오류: ' + err.message;
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>
+

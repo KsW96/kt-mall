@@ -1,0 +1,303 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+    <div>
+      <h1 class="h3 fw-bold mb-1">회원 개통 이력</h1>
+      <p class="text-muted small mb-0">
+        회원 정보(<code>app_user</code>)와 개통 이력(<code>activation_log</code>)을 
+        <strong>[생년월일]</strong>과 <strong>[전화번호]</strong> 기준으로 결합(INNER JOIN)하여 분석·조회합니다.
+      </p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+      <a href="/users" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+        <i class="bi bi-people"></i>
+        <span>회원 관리</span>
+      </a>
+      <a href="/activations" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1">
+        <i class="bi bi-phone"></i>
+        <span>개통 이력</span>
+      </a>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise"></i> 새로고침
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary-subtle text-primary me-3 flex-shrink-0" style="width: 52px; height: 52px;">
+            <i class="bi bi-link-45deg fs-3"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">총 결합 개통 건수</div>
+            <div class="fs-4 fw-bold text-dark mb-0 lh-1 mt-1">
+              <%= (stats.totalMatched || 0).toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">건</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-success-subtle text-success me-3 flex-shrink-0" style="width: 52px; height: 52px;">
+            <i class="bi bi-person-check fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">일치 확인 회원</div>
+            <div class="fs-4 fw-bold text-dark mb-0 lh-1 mt-1">
+              <%= (stats.uniqueUsers || 0).toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">명</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-info-subtle text-info me-3 flex-shrink-0" style="width: 52px; height: 52px;">
+            <i class="bi bi-gift fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">총 지원금 합계</div>
+            <div class="fs-4 fw-bold text-dark mb-0 lh-1 mt-1 text-truncate" title="<%= (stats.totalSubsidies || 0).toLocaleString() %>원">
+              <%= (stats.totalSubsidies || 0).toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">원</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-warning-subtle text-warning me-3 flex-shrink-0" style="width: 52px; height: 52px;">
+            <i class="bi bi-cash-stack fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">총 최종할부원금</div>
+            <div class="fs-4 fw-bold text-dark mb-0 lh-1 mt-1 text-truncate" title="<%= (stats.totalPrincipal || 0).toLocaleString() %>원">
+              <%= (stats.totalPrincipal || 0).toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">원</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Form -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="/user-activations">
+        <input type="hidden" name="limit" value="<%= pagination.limit %>">
+
+        <!-- 1행: 검색 조건 및 검색어 -->
+        <div class="row g-2 align-items-center mb-2">
+          <div class="col-md-3">
+            <select name="searchType" class="form-select form-select-sm">
+              <option value="all" <%= filters.searchType === 'all' ? 'selected' : '' %>>전체 항목 검색</option>
+              <option value="cust_nm" <%= filters.searchType === 'cust_nm' ? 'selected' : '' %>>고객명</option>
+              <option value="phone_num" <%= filters.searchType === 'phone_num' ? 'selected' : '' %>>개통번호 (휴대폰번호)</option>
+              <option value="model_nm" <%= filters.searchType === 'model_nm' ? 'selected' : '' %>>단말기 모델명</option>
+              <option value="plan_nm" <%= filters.searchType === 'plan_nm' ? 'selected' : '' %>>요금제</option>
+            </select>
+          </div>
+
+          <div class="col-md-9">
+            <input type="text" name="keyword" class="form-control form-control-sm" placeholder="고객명, 개통번호(하이픈 포함/제외), 모델명 등을 검색하세요..." value="<%= filters.keyword || '' %>">
+          </div>
+        </div>
+
+        <!-- 2행: 기간 검색(개통일) 및 검색 버튼 -->
+        <div class="row g-2 align-items-center">
+          <div class="col-md-6 col-lg-5">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-muted fw-medium">개통일</span>
+              <input type="date" name="startDate" class="form-control" value="<%= filters.startDate || '' %>" title="개통 시작일">
+              <span class="input-group-text bg-light text-muted">~</span>
+              <input type="date" name="endDate" class="form-control" value="<%= filters.endDate || '' %>" title="개통 종료일">
+            </div>
+          </div>
+
+          <div class="col-md-6 col-lg-7 d-flex justify-content-md-end gap-1">
+            <button type="submit" class="btn btn-sm btn-dark px-3">
+              검색
+            </button>
+            <a href="/user-activations" class="btn btn-sm btn-light border px-2" title="필터 초기화">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Join Table Card -->
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="small text-muted">
+        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 (페이지 <%= pagination.page %> / <%= pagination.totalPages || 1 %>)
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="small text-muted d-none d-md-block">
+          <i class="bi bi-shield-lock-fill text-secondary me-1"></i>고객명 <strong>2번째 글자 마스킹</strong>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-muted mb-0">표시 개수:</label>
+          <select class="form-select form-select-sm" style="width: auto;" onchange="changeLimit(this.value)">
+            <option value="20" <%= pagination.limit === 20 ? 'selected' : '' %>>20개씩</option>
+            <option value="30" <%= pagination.limit === 30 ? 'selected' : '' %>>30개씩</option>
+            <option value="40" <%= pagination.limit === 40 ? 'selected' : '' %>>40개씩</option>
+            <option value="50" <%= pagination.limit === 50 ? 'selected' : '' %>>50개씩</option>
+            <option value="100" <%= pagination.limit === 100 ? 'selected' : '' %>>100개씩</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 user-table user-activations-table-min">
+          <colgroup>
+            <col class="col-w-no">
+            <col class="col-w-name">
+            <col class="col-w-birth">
+            <col class="col-w-phone">
+            <col class="col-w-opening-dt">
+            <col class="col-w-model">
+            <col class="col-w-color">
+            <col class="col-w-plan">
+            <col class="col-w-option">
+            <col class="col-w-subsidy">
+            <col class="col-w-subsidy">
+            <col class="col-w-principal">
+          </colgroup>
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="text-center col-w-no">No</th>
+              <th scope="col" class="text-center col-w-name">고객명</th>
+              <th scope="col" class="text-center col-w-birth">생년월일</th>
+              <th scope="col" class="text-center col-w-phone">개통번호</th>
+              <th scope="col" class="text-center col-w-opening-dt">개통일자</th>
+              <th scope="col" class="text-start col-w-model">모델명</th>
+              <th scope="col" class="text-center col-w-color">색상</th>
+              <th scope="col" class="text-start col-w-plan">요금제</th>
+              <th scope="col" class="text-start col-w-option">약정옵션</th>
+              <th scope="col" class="text-end col-w-subsidy">공통지원금</th>
+              <th scope="col" class="text-end col-w-subsidy">추가지원금</th>
+              <th scope="col" class="text-end col-w-principal">최종할부원금</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (items && items.length > 0) { %>
+              <% items.forEach((row, idx) => { %>
+                <tr>
+                  <!-- 1. No -->
+                  <td class="text-center text-muted small col-w-no">
+                    <%= (pagination.page - 1) * pagination.limit + (idx + 1) %>
+                  </td>
+
+                  <!-- 2. 고객명 (2번째 글자 마스킹 적용) -->
+                  <td class="text-center col-w-name">
+                    <span class="fw-semibold text-dark"><%= row.masked_name %></span>
+                  </td>
+
+                  <!-- 3. 생년월일 (YYMMDD) -->
+                  <td class="text-center text-secondary small col-w-birth">
+                    <%= row.birth_dt || '-' %>
+                  </td>
+
+                  <!-- 4. 개통번호 (010-XXXX-XXXX) -->
+                  <td class="text-center font-monospace small col-w-phone">
+                    <%= row.phone_num || row.phone || '-' %>
+                  </td>
+
+                  <!-- 5. 개통일시 -->
+                  <td class="text-center text-muted small col-w-opening-dt">
+                    <%= row.opening_dt || '-' %>
+                  </td>
+
+                  <!-- 6. 모델명 -->
+                  <td class="text-start fw-medium text-dark col-w-model text-truncate" title="<%= row.model_nm || '' %>">
+                    <%= row.model_nm || '-' %>
+                  </td>
+
+                  <!-- 7. 색상 -->
+                  <td class="text-center small col-w-color">
+                    <%= row.color || '-' %>
+                  </td>
+
+                  <!-- 8. 요금제 -->
+                  <td class="text-start small col-w-plan text-truncate" title="<%= row.plan_nm || '' %>">
+                    <%= row.plan_nm || '-' %>
+                  </td>
+
+                  <!-- 9. 약정옵션 -->
+                  <td class="text-start small col-w-option text-truncate" title="<%= row.agreement_opt || '' %>">
+                    <%= row.agreement_opt || '-' %>
+                  </td>
+
+                  <!-- 10. 공통지원금 -->
+                  <td class="text-end small col-w-subsidy">
+                    <%= row.common_subsidy_num.toLocaleString() %><span class="text-muted ms-1" style="font-size: 0.75rem;">원</span>
+                  </td>
+
+                  <!-- 11. 추가지원금 -->
+                  <td class="text-end small col-w-subsidy">
+                    <%= row.add_subsidy_num.toLocaleString() %><span class="text-muted ms-1" style="font-size: 0.75rem;">원</span>
+                  </td>
+
+                  <!-- 12. 최종할부원금 (출고가 - 공통지원금 - 추가지원금) -->
+                  <td class="text-end fw-bold text-primary col-w-principal" title="출고가: <%= row.factory_price_num.toLocaleString() %>원 - 공통지원금: <%= row.common_subsidy_num.toLocaleString() %>원 - 추가지원금: <%= row.add_subsidy_num.toLocaleString() %>원">
+                    <%= row.final_principal_num.toLocaleString() %><span class="text-primary-emphasis ms-1" style="font-size: 0.78rem;">원</span>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="12" class="text-center py-5 text-muted">
+                  <i class="bi bi-link-45deg fs-2 d-block mb-2 text-secondary"></i>
+                  회원 정보와 개통 이력이 [생년월일] 및 [전화번호] 기준으로 일치하는 조인 데이터가 없습니다.<br>
+                  <span class="small text-secondary mt-1 d-inline-block">
+                    [회원 관리]와 [개통 이력] 화면에서 각각 엑셀 데이터를 먼저 업로드해 주세요.
+                  </span>
+                  <div class="mt-3 d-flex justify-content-center gap-2">
+                    <a href="/users" class="btn btn-sm btn-outline-primary">회원 데이터 등록 가기</a>
+                    <a href="/activations" class="btn btn-sm btn-outline-success">개통 이력 등록 가기</a>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <% if (pagination && pagination.total > 0) { %>
+      <div class="card-footer bg-white border-0 py-3 d-flex justify-content-center">
+        <%- include('partials/pagination', { pagination, filters, baseUrl }) %>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<script>
+  // 페이지당 표시 개수(limit) 변경 처리
+  function changeLimit(newLimit) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('limit', newLimit);
+    url.searchParams.set('page', '1');
+    window.location.href = url.pathname + url.search;
+  }
+</script>
+
+<%- include('partials/footer') %>
+

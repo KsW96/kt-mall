@@ -1,0 +1,113 @@
+/**
+ * 개통 이력 엑셀 및 DB 컬럼 매핑 정의서
+ *
+ * 1. LEGACY_COLUMNS: 기존 화면 출력 기준 핵심 컬럼 리스트 (임시 저장 및 UI 렌더링용)
+ * 2. ALL_80_COLUMNS: 통신사 엑셀 원본 80개 컬럼 정의 (DB 저장 스키마 규격)
+ */
+
+// 1. 기존 화면 출력 기준 컬럼 리스트 (임시저장 및 UI 노출 기준)
+const LEGACY_COLUMNS = [
+  { field: 'mgmt_cd', label: '관리코드', width: '110px' },
+  { field: 'cust_nm', label: '고객명', width: '100px' },
+  { field: 'phone_num', label: '개통번호', width: '130px' },
+  { field: 'opening_dt', label: '개통일', width: '110px' },
+  { field: 'birth_dt', label: '생년월일', width: '105px' },
+  { field: 'model_nm', label: '모델명', width: '150px' },
+  { field: 'color', label: '색상', width: '100px' },
+  { field: 'serial_num', label: '일련번호', width: '140px' },
+  { field: 'seller_nm', label: '판매처실명', width: '120px' },
+  { field: 'agency_cd', label: '대리점코드', width: '100px' },
+  { field: 'agreement_opt', label: '판매약정옵션', width: '130px' },
+  { field: 'created_dt', label: '등록일시', width: '145px' },
+  { field: 'remark1', label: '비고1', width: '150px' }
+];
+
+// 2. 엑셀 기본 구조 80개 컬럼 전체 매핑 정의 (네이밍 규약: 코드 _cd, 이름 _nm, 날짜 _dt 준수)
+// InnoDB 8126-byte 행 크기 제한을 고려하여 검색/인덱스 컬럼은 VARCHAR, 그 외 데이터는 TEXT로 최적화
+const ALL_80_COLUMNS = [
+  { index: 0, header: '번호', field: 'excel_no', type: 'VARCHAR(20)', comment: '엑셀 행 번호' },
+  { index: 1, header: '관리코드', field: 'mgmt_cd', type: 'VARCHAR(50)', comment: '관리코드' },
+  { index: 2, header: '개통일', field: 'opening_dt', type: 'VARCHAR(30)', comment: '개통일자' },
+  { index: 3, header: '모델명', field: 'model_nm', type: 'VARCHAR(50)', comment: '단말기 모델명' },
+  { index: 4, header: '일련번호', field: 'serial_num', type: 'VARCHAR(50)', comment: '단말기 일련번호' },
+  { index: 5, header: '제품구분', field: 'prod_type', type: 'VARCHAR(30)', comment: '단말기 제품구분' },
+  { index: 6, header: '출고가', field: 'factory_price', type: 'VARCHAR(30)', comment: '출고가' },
+  { index: 7, header: 'VAT', field: 'vat', type: 'VARCHAR(30)', comment: '부가세' },
+  { index: 8, header: '출고가(VAT별도)', field: 'factory_price_novat', type: 'VARCHAR(30)', comment: '출고가(VAT별도)' },
+  { index: 9, header: '개통처리자', field: 'opening_manager_nm', type: 'VARCHAR(50)', comment: '개통처리자 이름' },
+  { index: 10, header: '고객명', field: 'cust_nm', type: 'VARCHAR(50)', comment: '고객명' },
+  { index: 11, header: '개통번호', field: 'phone_num', type: 'VARCHAR(30)', comment: '개통번호' },
+  { index: 12, header: '색상', field: 'color', type: 'VARCHAR(30)', comment: '단말기 색상' },
+  { index: 13, header: '생년월일', field: 'birth_dt', type: 'VARCHAR(6)', comment: '생년월일 (YYMMDD 앞 6자리)' },
+  { index: 14, header: '사업자번호', field: 'biz_num', type: 'VARCHAR(30)', comment: '사업자번호' },
+  { index: 15, header: '보유처그룹', field: 'holder_group', type: 'TEXT', comment: '보유처그룹' },
+  { index: 16, header: '보유처애칭', field: 'holder_nick_nm', type: 'TEXT', comment: '보유처애칭' },
+  { index: 17, header: '보유처실명', field: 'holder_nm', type: 'TEXT', comment: '보유처실명' },
+  { index: 18, header: '판매처애칭', field: 'seller_nick_nm', type: 'TEXT', comment: '판매처애칭' },
+  { index: 19, header: '판매처실명', field: 'seller_nm', type: 'VARCHAR(50)', comment: '판매처실명' },
+  { index: 20, header: '판매번호', field: 'sales_num', type: 'TEXT', comment: '판매번호' },
+  { index: 21, header: '판매처코드', field: 'seller_cd', type: 'VARCHAR(30)', comment: '판매처코드' },
+  { index: 22, header: '재고이동', field: 'stock_move', type: 'TEXT', comment: '재고이동' },
+  { index: 23, header: '판매자', field: 'seller_user_nm', type: 'TEXT', comment: '판매자 이름' },
+  { index: 24, header: '입고처', field: 'receiving_store_nm', type: 'TEXT', comment: '입고처' },
+  { index: 25, header: '개통처', field: 'opening_store_nm', type: 'TEXT', comment: '개통처' },
+  { index: 26, header: '가입구분', field: 'join_type', type: 'TEXT', comment: '가입구분' },
+  { index: 27, header: '가입유형', field: 'join_category', type: 'TEXT', comment: '가입유형' },
+  { index: 28, header: '선불폰여부', field: 'prepaid_yn', type: 'VARCHAR(10)', comment: '선불폰여부' },
+  { index: 29, header: 'MNP유형', field: 'mnp_type', type: 'TEXT', comment: 'MNP유형' },
+  { index: 30, header: '처리자', field: 'processor_nm', type: 'TEXT', comment: '처리자 이름' },
+  { index: 31, header: '가입비', field: 'join_fee', type: 'VARCHAR(30)', comment: '가입비' },
+  { index: 32, header: '할부기간', field: 'installment_period', type: 'VARCHAR(30)', comment: '할부기간' },
+  { index: 33, header: 'YT세대', field: 'yt_generation', type: 'TEXT', comment: 'YT세대' },
+  { index: 34, header: '대리점코드', field: 'agency_cd', type: 'VARCHAR(50)', comment: '대리점 코드' },
+  { index: 35, header: '삼차점', field: 'tertiary_store', type: 'TEXT', comment: '삼차점' },
+  { index: 36, header: '고객등급', field: 'cust_grade', type: 'VARCHAR(30)', comment: '고객등급' },
+  { index: 37, header: '약정할인금액', field: 'discount_amt', type: 'VARCHAR(30)', comment: '약정할인금액' },
+  { index: 38, header: '스폰서', field: 'sponsor', type: 'TEXT', comment: '스폰서' },
+  { index: 39, header: '개월', field: 'contract_months', type: 'VARCHAR(20)', comment: '약정 개월수' },
+  { index: 40, header: '채권료', field: 'bond_fee', type: 'VARCHAR(30)', comment: '채권료' },
+  { index: 41, header: '채권료 결제구분', field: 'bond_fee_type', type: 'TEXT', comment: '채권료 결제구분' },
+  { index: 42, header: '월 분납금', field: 'monthly_installment', type: 'VARCHAR(30)', comment: '월 분납금' },
+  { index: 43, header: '선납금', field: 'prepayment', type: 'VARCHAR(30)', comment: '선납금' },
+  { index: 44, header: '사용기간', field: 'usage_period', type: 'VARCHAR(30)', comment: '사용기간' },
+  { index: 45, header: '사용금액', field: 'usage_amt', type: 'VARCHAR(30)', comment: '사용금액' },
+  { index: 46, header: '할부원금', field: 'installment_principal', type: 'VARCHAR(30)', comment: '할부원금' },
+  { index: 47, header: '요금청구', field: 'fee_billing', type: 'TEXT', comment: '요금청구 방식' },
+  { index: 48, header: '약정할인', field: 'contract_discount', type: 'TEXT', comment: '약정할인' },
+  { index: 49, header: '요금제', field: 'plan_nm', type: 'TEXT', comment: '요금제 이름' },
+  { index: 50, header: '부가서비스', field: 'extra_services', type: 'TEXT', comment: '부가서비스' },
+  { index: 51, header: '반납구분', field: 'return_type', type: 'TEXT', comment: '반납구분' },
+  { index: 52, header: '반납모델', field: 'return_model_nm', type: 'TEXT', comment: '반납모델' },
+  { index: 53, header: '반납일련번호', field: 'return_serial_num', type: 'TEXT', comment: '반납일련번호' },
+  { index: 54, header: '서류번호', field: 'doc_num', type: 'TEXT', comment: '서류번호' },
+  { index: 55, header: '미비서류', field: 'missing_docs', type: 'TEXT', comment: '미비서류' },
+  { index: 56, header: '결합상품', field: 'combined_prod', type: 'TEXT', comment: '결합상품' },
+  { index: 57, header: '고객아이디', field: 'cust_id', type: 'TEXT', comment: '고객아이디' },
+  { index: 58, header: '고객유형', field: 'cust_type', type: 'TEXT', comment: '고객유형' },
+  { index: 59, header: '약정기간', field: 'contract_period', type: 'VARCHAR(30)', comment: '약정기간' },
+  { index: 60, header: '유치카드', field: 'attract_card', type: 'TEXT', comment: '유치카드' },
+  { index: 61, header: 'USIM모델', field: 'usim_model_nm', type: 'TEXT', comment: 'USIM모델' },
+  { index: 62, header: '제품구분', field: 'usim_prod_type', type: 'VARCHAR(30)', comment: 'USIM 제품구분' },
+  { index: 63, header: '재고타입', field: 'stock_type', type: 'TEXT', comment: '재고타입' },
+  { index: 64, header: '일련번호', field: 'usim_serial_num', type: 'VARCHAR(50)', comment: 'USIM 일련번호' },
+  { index: 65, header: '결제구분', field: 'pay_type', type: 'TEXT', comment: '결제구분' },
+  { index: 66, header: '결제금액', field: 'pay_amt', type: 'VARCHAR(30)', comment: '결제금액' },
+  { index: 67, header: '비고1', field: 'remark1', type: 'TEXT', comment: '비고1' },
+  { index: 68, header: '비고2', field: 'remark2', type: 'TEXT', comment: '비고2' },
+  { index: 69, header: '구독여부', field: 'sub_yn', type: 'VARCHAR(10)', comment: '구독여부' },
+  { index: 70, header: '청구계정번호', field: 'billing_account_num', type: 'TEXT', comment: '청구계정번호' },
+  { index: 71, header: '검증결과', field: 'verify_result', type: 'TEXT', comment: '검증결과' },
+  { index: 72, header: '자동/수동', field: 'auto_manual_type', type: 'VARCHAR(30)', comment: '자동/수동' },
+  { index: 73, header: '악세서리', field: 'accessory', type: 'TEXT', comment: '악세서리' },
+  { index: 74, header: '서식지등록일', field: 'form_reg_dt', type: 'VARCHAR(30)', comment: '서식지등록일' },
+  { index: 75, header: '수집경로', field: 'collection_path', type: 'TEXT', comment: '수집경로' },
+  { index: 76, header: '공통지원금', field: 'common_subsidy', type: 'VARCHAR(30)', comment: '공통지원금' },
+  { index: 77, header: '추가지원금', field: 'add_subsidy', type: 'VARCHAR(30)', comment: '추가지원금' },
+  { index: 78, header: '판매약정옵션', field: 'agreement_opt', type: 'TEXT', comment: '판매약정옵션' },
+  { index: 79, header: '재고구분', field: 'stock_category', type: 'TEXT', comment: '재고구분' }
+];
+
+module.exports = {
+  LEGACY_COLUMNS,
+  ALL_80_COLUMNS
+};
