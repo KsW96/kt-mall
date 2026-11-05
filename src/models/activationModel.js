@@ -194,6 +194,14 @@ const ActivationModel = {
       filtered = filtered.filter(l => l.opening_dt && l.opening_dt <= endDate);
     }
 
+    // 최신 개통일자(opening_dt) 및 id 역순(DESC) 정렬
+    filtered.sort((a, b) => {
+      const dateA = a.opening_dt || '';
+      const dateB = b.opening_dt || '';
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
+      return (b.id || 0) - (a.id || 0);
+    });
+
     const total = filtered.length;
     const items = filtered.slice(offset, offset + parseInt(limit, 10));
 

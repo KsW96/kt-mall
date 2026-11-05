@@ -20,6 +20,7 @@ const dataController = {
       res.render('data', {
         title: '데이터 조회 및 관리',
         activeMenu: 'data',
+        baseUrl: '/data',
         items: result.items,
         pagination: {
           page: result.page,

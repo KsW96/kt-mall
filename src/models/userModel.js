@@ -133,7 +133,7 @@ const UserModel = {
         const [countResult] = await db.query(`SELECT COUNT(*) as total FROM app_user ${whereSql}`, params);
         const total = countResult[0]?.total || 0;
 
-        // 목록 조회
+        // 목록 조회 (회원 고유번호 un 최신순 DESC 정렬)
         const [rows] = await db.query(
           `SELECT 
              no,
@@ -145,9 +145,9 @@ const UserModel = {
              status,
              approval_yn,
              memo,
-             DATE_FORMAT(join_dt, '%Y-%m-%d %H:%i:%s') as join_dt,
-             DATE_FORMAT(last_login_dt, '%Y-%m-%d %H:%i:%s') as last_login_dt
-           FROM app_user ${whereSql} ORDER BY no DESC LIMIT ? OFFSET ?`,
+             COALESCE(DATE_FORMAT(join_dt, '%Y-%m-%d %H:%i:%s'), join_dt) as join_dt,
+             COALESCE(DATE_FORMAT(last_login_dt, '%Y-%m-%d %H:%i:%s'), last_login_dt) as last_login_dt
+           FROM app_user ${whereSql} ORDER BY un DESC LIMIT ? OFFSET ?`,
           [...params, parseInt(limit, 10), parseInt(offset, 10)]
         );
 
@@ -183,6 +183,9 @@ const UserModel = {
     if (endDate) {
       filtered = filtered.filter(u => u.join_dt && u.join_dt <= `${endDate} 23:59:59`);
     }
+
+    // 회원 고유번호(un) 역순(DESC) 정렬 (최신 가입 회원 상단)
+    filtered.sort((a, b) => (b.un || 0) - (a.un || 0));
 
     const total = filtered.length;
     const items = filtered.slice(offset, offset + parseInt(limit, 10));

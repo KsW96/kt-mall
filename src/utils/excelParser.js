@@ -203,11 +203,11 @@ function parseDateTime(val) {
   }
 
   const str = String(val).trim();
-  if (!str || str.startsWith('0000') || str === '000000' || str === '0') return null;
+  if (!str) return null;
 
-  // '0000-00-00 00:00:00', '0000-00-00', '0' 등 0으로 채워진 미접속 레거시 날짜 필터링
-  if (/^0{4}[-./]0{2}[-./]0{2}/.test(str) || str.startsWith('0000') || str === '0') {
-    return null;
+  // '0000-00-00 00:00:00', '0000:00:00 00:00:00' 등 0으로 채워진 레거시/더미 일시는 그대로 보존
+  if (/^0{4}[:\-./]0{2}[:\-./]0{2}/.test(str) || str.startsWith('0000')) {
+    return '0000-00-00 00:00:00';
   }
 
   // "2026-10-29 06:54:26" 형식 대응
@@ -290,8 +290,8 @@ function parseUserExcel(filePath) {
     // 6. 메모
     const memo = String(row[5] || '').trim() || null;
 
-    // 7. 가입일시 (없으면 현재 일시 기본값)
-    const join_dt = parseDateTime(row[6]) || new Date().toISOString().slice(0, 19).replace('T', ' ');
+    // 7. 가입일시 (엑셀에 없으면 null 처리, 절대 현재 일시로 임의 주입하지 않음)
+    const join_dt = parseDateTime(row[6]);
 
     // 8. 최종접속일시
     const last_login_dt = parseDateTime(row[7]);

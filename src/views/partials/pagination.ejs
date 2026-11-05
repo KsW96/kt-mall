@@ -1,12 +1,17 @@
 <%
   const currentPage = parseInt(pagination.page, 10) || 1;
-  const totalPages = parseInt(pagination.totalPages, 10) || 1;
+  const totalPages = Math.max(1, parseInt(pagination.totalPages, 10) || 1);
   const currentLimit = parseInt(pagination.limit, 10) || 20;
   
-  // 페이지 블록 계산 (한 번에 최대 10개 번호 표시)
-  const blockSize = 10;
-  const startPage = Math.floor((currentPage - 1) / blockSize) * blockSize + 1;
-  const endPage = Math.min(startPage + blockSize - 1, totalPages);
+  // 1. 최대 5개 번호만 노출 (슬라이딩 윈도우 & 중앙 포커싱)
+  const maxButtons = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+  let endPage = startPage + maxButtons - 1;
+
+  if (endPage > totalPages) {
+    endPage = totalPages;
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
 
   // URL 생성 함수 (기존 쿼리 파라미터 보존)
   function makeUrl(targetPage) {
@@ -25,42 +30,49 @@
 %>
 
 <% if (pagination && pagination.total > 0) { %>
-  <nav aria-label="Page navigation">
-    <ul class="pagination pagination-sm mb-0 align-items-center">
-      <!-- 1. 맨 처음 (<<) -->
-      <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="맨 처음">
-        <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(1) %>" aria-label="First">
-          <i class="bi bi-chevron-double-left"></i>
-        </a>
-      </li>
-
-      <!-- 2. 이전 블록 / 이전 (<) -->
-      <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="이전">
-        <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(currentPage - 1) %>" aria-label="Previous">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      </li>
-
-      <!-- 3. 페이지 번호 (최대 10개) -->
-      <% for (let p = startPage; p <= endPage; p++) { %>
-        <li class="page-item <%= currentPage === p ? 'active' : '' %>">
-          <a class="page-link" href="<%= makeUrl(p) %>"><%= p %></a>
+  <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+    <nav aria-label="Page navigation">
+      <ul class="pagination pagination-sm mb-0 align-items-center">
+        <!-- 1. 맨 처음 (<<) -->
+        <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="맨 처음 (1페이지)">
+          <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(1) %>" aria-label="First">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
         </li>
-      <% } %>
 
-      <!-- 4. 다음 (>) -->
-      <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="다음">
-        <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(currentPage + 1) %>" aria-label="Next">
-          <i class="bi bi-chevron-right"></i>
-        </a>
-      </li>
+        <!-- 2. 이전 (<) -->
+        <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>" title="이전 페이지">
+          <a class="page-link" href="<%= currentPage <= 1 ? '#' : makeUrl(currentPage - 1) %>" aria-label="Previous">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
 
-      <!-- 5. 맨 끝 (>>) -->
-      <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="맨 끝">
-        <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(totalPages) %>" aria-label="Last">
-          <i class="bi bi-chevron-double-right"></i>
-        </a>
-      </li>
-    </ul>
-  </nav>
+        <!-- 3. 중앙 포커싱 페이지 번호 (최대 5개만 노출) -->
+        <% for (let p = startPage; p <= endPage; p++) { %>
+          <li class="page-item <%= currentPage === p ? 'active fw-bold' : '' %>">
+            <a class="page-link" href="<%= makeUrl(p) %>"><%= p %></a>
+          </li>
+        <% } %>
+
+        <!-- 4. 다음 (>) -->
+        <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="다음 페이지">
+          <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(currentPage + 1) %>" aria-label="Next">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+
+        <!-- 5. 맨 끝 (>>) -->
+        <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>" title="맨 끝 (<%= totalPages %>페이지)">
+          <a class="page-link" href="<%= currentPage >= totalPages ? '#' : makeUrl(totalPages) %>" aria-label="Last">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 최대 페이지 수 안내 뱃지 (클릭 시 마지막 페이지로 이동) -->
+    <a href="<%= makeUrl(totalPages) %>" class="badge bg-light text-secondary border py-2 px-2 ms-2 text-decoration-none" title="최대 마지막 페이지로 이동">
+      현재 <strong class="text-primary"><%= currentPage %></strong> / 최대 <strong class="text-dark"><%= totalPages %></strong> 페이지
+    </a>
+  </div>
 <% } %>

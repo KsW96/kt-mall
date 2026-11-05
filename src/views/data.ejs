@@ -56,7 +56,7 @@
 
         <div class="col-md-2 d-flex gap-1">
           <button type="submit" class="btn btn-sm btn-dark flex-grow-1">
-            <i class="bi bi-funnel me-1"></i> 검색
+            검색
           </button>
           <a href="/data" class="btn btn-sm btn-light border" title="필터 초기화">
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -70,7 +70,7 @@
   <div class="card border-0 shadow-sm rounded-3">
     <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
       <div class="small text-muted">
-        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 (페이지 <%= pagination.page %> / <%= pagination.totalPages || 1 %>)
+        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지
       </div>
     </div>
     <div class="card-body p-0">
@@ -130,23 +130,9 @@
     </div>
 
     <!-- Pagination -->
-    <% if (pagination.totalPages > 1) { %>
+    <% if (pagination && pagination.total > 0) { %>
       <div class="card-footer bg-white border-0 py-3 d-flex justify-content-center">
-        <nav>
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
-              <a class="page-link" href="/data?page=<%= pagination.page - 1 %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>">이전</a>
-            </li>
-            <% for (let p = 1; p <= pagination.totalPages; p++) { %>
-              <li class="page-item <%= pagination.page === p ? 'active' : '' %>">
-                <a class="page-link" href="/data?page=<%= p %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>"><%= p %></a>
-              </li>
-            <% } %>
-            <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
-              <a class="page-link" href="/data?page=<%= pagination.page + 1 %>&keyword=<%= encodeURIComponent(filters.keyword) %>&category=<%= encodeURIComponent(filters.category) %>&status=<%= encodeURIComponent(filters.status) %>">다음</a>
-            </li>
-          </ul>
-        </nav>
+        <%- include('partials/pagination', { pagination, filters, baseUrl }) %>
       </div>
     <% } %>
   </div>
