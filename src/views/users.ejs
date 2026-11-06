@@ -5,7 +5,12 @@
   <!-- Page Header -->
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
-      <h1 class="h3 fw-bold mb-1">회원 관리</h1>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+        <h1 class="h3 fw-bold mb-0">회원 관리</h1>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2.5 py-1.5 font-monospace">
+          <i class="bi bi-clock-history me-1"></i>최신 업로드 일자: <strong><%= stats.lastUploadDt || '-' %></strong>
+        </span>
+      </div>
       <p class="text-muted small mb-0">앱 회원 데이터 조회 및 엑셀 일괄 업로드(Bulk UPSERT)를 지원합니다.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
@@ -147,9 +152,11 @@
 
   <!-- Users Table Card -->
   <div class="card border-0 shadow-sm rounded-3">
-    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
-      <div class="small text-muted">
-        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>명 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
+        <span>검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>명 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지</span>
+        <span class="text-secondary opacity-50">|</span>
+        <span>최신 업로드: <strong class="text-primary font-monospace"><%= stats.lastUploadDt || '-' %></strong></span>
       </div>
       <div class="d-flex align-items-center gap-2">
         <label class="small text-muted mb-0">표시 개수:</label>
@@ -168,9 +175,9 @@
           <colgroup>
             <col class="col-w-no">
             <col class="col-w-name">
-            <col class="col-w-point">
             <col class="col-w-birth">
             <col class="col-w-phone">
+            <col class="col-w-point">
             <col class="col-w-datetime">
             <col class="col-w-datetime">
             <col class="col-w-approval">
@@ -182,9 +189,9 @@
             <tr>
               <th scope="col" class="text-center col-w-no">No</th>
               <th scope="col" class="text-center col-w-name">이름 (nm)</th>
-              <th scope="col" class="text-end col-w-point">포인트</th>
               <th scope="col" class="text-center col-w-birth">생년월일</th>
               <th scope="col" class="text-center col-w-phone">휴대폰 번호</th>
+              <th scope="col" class="text-end col-w-point">포인트</th>
               <th scope="col" class="text-center col-w-datetime">가입일시</th>
               <th scope="col" class="text-center col-w-datetime">최종접속일시</th>
               <th scope="col" class="text-center col-w-approval">가입승인여부</th>
@@ -199,9 +206,9 @@
                 <tr>
                   <td class="text-center text-muted small col-w-no"><%= (pagination.page - 1) * pagination.limit + (idx + 1) %></td>
                   <td class="text-center fw-semibold text-dark col-w-name"><%= u.nm %></td>
-                  <td class="text-end fw-semibold text-primary col-w-point"><%= (u.point || 0).toLocaleString() %> P</td>
                   <td class="text-center text-secondary small col-w-birth"><%= formatDate(u.birth_dt) %></td>
                   <td class="text-center font-monospace small col-w-phone"><%= u.phone || '-' %></td>
+                  <td class="text-end fw-semibold text-primary col-w-point"><%= (u.point || 0).toLocaleString() %> P</td>
                   <td class="text-center text-muted small col-w-datetime"><%= formatDateTime(u.join_dt) %></td>
                   <td class="text-center text-muted small col-w-datetime"><%= formatDateTime(u.last_login_dt) %></td>
                   <td class="text-center col-w-approval">

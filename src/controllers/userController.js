@@ -1,5 +1,6 @@
 const fs = require('fs');
 const UserModel = require('../models/userModel');
+const SystemModel = require('../models/systemModel');
 const ErrorLogModel = require('../models/errorLogModel');
 const { scanRowsForInjection } = require('../utils/security');
 const { parseUserExcel } = require('../utils/excelParser');
@@ -101,6 +102,13 @@ const userController = {
 
       // 3. MySQL 대량 삽입 / UPSERT (트랜잭션 실행)
       const result = await UserModel.bulkUpsertUsers(users);
+
+      // sys_config에 회원정보 최근 업로드 일시 기록
+      try {
+        await SystemModel.recordUploadTime('MEMBER_EXCEL');
+      } catch (metaErr) {
+        console.warn('sys_config 최근 업로드 일시 갱신 실패:', metaErr.message);
+      }
 
       // 4. 임시 파일 삭제
       if (fs.existsSync(filePath)) {

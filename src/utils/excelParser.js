@@ -186,13 +186,20 @@ function parseOpeningDate(val) {
  * - 미접속/비정상 날짜('0000-00-00 00:00:00' 등)는 NULL로 안전하게 정제
  */
 function parseDateTime(val) {
-  if (!val) return null;
+  if (val === null || val === undefined || val === '') return null;
+
+  // 0 또는 '0'인 경우 더미 날짜('0000-00-00 00:00:00')로 보존
+  if (val === 0 || val === '0') {
+    return '0000-00-00 00:00:00';
+  }
 
   if (typeof val === 'number') {
     const dateObj = xlsx.SSF.parse_date_code(val);
     if (dateObj) {
       const y = dateObj.y;
-      if (y < 1900) return null; // 1900년 미만 비정상 날짜 필터링
+      if (y < 1900 || (dateObj.m === 1 && dateObj.d === 0)) {
+        return '0000-00-00 00:00:00';
+      }
       const m = String(dateObj.m).padStart(2, '0');
       const d = String(dateObj.d).padStart(2, '0');
       const H = String(dateObj.H || 0).padStart(2, '0');
@@ -205,8 +212,8 @@ function parseDateTime(val) {
   const str = String(val).trim();
   if (!str) return null;
 
-  // '0000-00-00 00:00:00', '0000:00:00 00:00:00' 등 0으로 채워진 레거시/더미 일시는 그대로 보존
-  if (/^0{4}[:\-./]0{2}[:\-./]0{2}/.test(str) || str.startsWith('0000')) {
+  // '0000-00-00 00:00:00', '0000:00:00 00:00:00', '0000', '0' 등 0으로 채워진 레거시/더미 일시는 그대로 보존
+  if (/^0{1,4}[:\-./]0{1,2}[:\-./]0{1,2}/.test(str) || str.startsWith('0000') || str === '0') {
     return '0000-00-00 00:00:00';
   }
 
@@ -217,9 +224,9 @@ function parseDateTime(val) {
     const mNum = parseInt(dtMatch[2], 10);
     const dNum = parseInt(dtMatch[3], 10);
 
-    // 연도 1900년 미만, 0월, 0일 등 비정상 범위 필터링
+    // 연도 1900년 미만, 0월, 0일 등 비정상 범위 필터링 -> 0000-00-00 00:00:00 처리
     if (yNum < 1900 || mNum === 0 || mNum > 12 || dNum === 0 || dNum > 31) {
-      return null;
+      return '0000-00-00 00:00:00';
     }
 
     const y = dtMatch[1];

@@ -1,8 +1,10 @@
 const fs = require('fs');
 const ActivationModel = require('../models/activationModel');
+const SystemModel = require('../models/systemModel');
 const ErrorLogModel = require('../models/errorLogModel');
 const { scanRowsForInjection } = require('../utils/security');
 const { parseActivationExcel } = require('../utils/excelParser');
+const { parseMoney } = require('../utils/masking');
 const db = require('../config/db');
 
 const activationController = {
@@ -23,11 +25,16 @@ const activationController = {
       const stats = await ActivationModel.getStats();
       const dbStatus = db.getDbStatus();
 
+      const items = result.items.map(item => ({
+        ...item,
+        installment_principal_num: parseMoney(item.installment_principal)
+      }));
+
       res.render('activations', {
         title: '개통 이력 관리 (activation_log)',
         activeMenu: 'activations',
         baseUrl: '/activations',
-        items: result.items,
+        items,
         pagination: {
           page: result.page,
           limit: result.limit,
@@ -36,6 +43,7 @@ const activationController = {
         },
         filters: { keyword, searchType, agency_cd, startDate, endDate },
         stats,
+        parseMoney,
         dbStatus
       });
     } catch (err) {
@@ -100,6 +108,13 @@ const activationController = {
 
       // 2. MySQL 대량 삽입 (트랜잭션 실행)
       const result = await ActivationModel.bulkInsertActivations(logs);
+
+      // sys_config에 개통정보 최근 업로드 일시 기록
+      try {
+        await SystemModel.recordUploadTime('OPEN_EXCEL');
+      } catch (metaErr) {
+        console.warn('sys_config 최근 업로드 일시 갱신 실패:', metaErr.message);
+      }
 
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

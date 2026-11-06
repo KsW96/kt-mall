@@ -45,6 +45,7 @@ const UserModel = {
               birth_dt = VALUES(birth_dt),
               phone = VALUES(phone),
               memo = VALUES(memo),
+              join_dt = VALUES(join_dt),
               last_login_dt = VALUES(last_login_dt),
               approval_yn = VALUES(approval_yn),
               status = VALUES(status)
@@ -200,11 +201,21 @@ const UserModel = {
   },
 
   /**
-   * 회원 통계 (총원, 활동, 탈퇴, 총 포인트)
+   * 회원 통계 (총원, 활동, 탈퇴, 총 포인트, 최신 업로드 일시)
    */
   async getStats() {
+    let lastUploadDt = '-';
+
     if (db.getDbStatus().connected) {
       try {
+        // 1. sys_config 에서 MEMBER_EXCEL 최근 업로드 일시 확인
+        try {
+          const [cfgRows] = await db.query("SELECT item_value FROM sys_config WHERE group_code = 'UPLOAD_META' AND item_code = 'MEMBER_EXCEL'");
+          if (cfgRows && cfgRows[0] && cfgRows[0].item_value && cfgRows[0].item_value !== '-') {
+            lastUploadDt = cfgRows[0].item_value;
+          }
+        } catch (e) {}
+
         const [rows] = await db.query(`
           SELECT 
             COUNT(*) as totalUsers,
@@ -218,18 +229,29 @@ const UserModel = {
           totalUsers: Number(s.totalUsers) || 0,
           activeUsers: Number(s.activeUsers) || 0,
           inactiveUsers: Number(s.inactiveUsers) || 0,
-          totalPoints: Number(s.totalPoints) || 0
+          totalPoints: Number(s.totalPoints) || 0,
+          lastUploadDt
         };
       } catch (err) {
         console.error('MySQL UserModel.getStats Error:', err.message);
       }
     }
 
+    try {
+      const SystemModel = require('./systemModel');
+      const allConfigs = await SystemModel.getAllConfigs({});
+      const memberCfg = allConfigs.find(c => c.group_code === 'UPLOAD_META' && c.item_code === 'MEMBER_EXCEL');
+      if (memberCfg && memberCfg.item_value && memberCfg.item_value !== '-') {
+        lastUploadDt = memberCfg.item_value;
+      }
+    } catch (e) {}
+
     return {
       totalUsers: mockUsers.length,
       activeUsers: mockUsers.filter(u => u.status === 'I').length,
       inactiveUsers: mockUsers.filter(u => u.status === 'O').length,
-      totalPoints: mockUsers.reduce((acc, u) => acc + (u.point || 0), 0)
+      totalPoints: mockUsers.reduce((acc, u) => acc + (u.point || 0), 0),
+      lastUploadDt
     };
   },
 

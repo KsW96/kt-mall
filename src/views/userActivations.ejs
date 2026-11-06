@@ -5,7 +5,15 @@
   <!-- Page Header -->
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
-      <h1 class="h3 fw-bold mb-1">회원 개통 이력</h1>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+        <h1 class="h3 fw-bold mb-0">회원 개통 이력</h1>
+        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2.5 py-1.5 font-monospace">
+          <i class="bi bi-clock-history me-1"></i>개통 최신 업로드 일자: <strong><%= stats.lastUploadDt || stats.openLastUpload || '-' %></strong>
+        </span>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2.5 py-1.5 font-monospace">
+          <i class="bi bi-people me-1"></i>회원 최신 업로드 일자: <strong><%= stats.memberLastUpload || '-' %></strong>
+        </span>
+      </div>
       <p class="text-muted small mb-0">
         회원 정보(<code>app_user</code>)와 개통 이력(<code>activation_log</code>)을 
         <strong>[생년월일]</strong>과 <strong>[전화번호]</strong> 기준으로 결합(INNER JOIN)하여 분석·조회합니다.
@@ -83,7 +91,7 @@
             <i class="bi bi-cash-stack fs-4"></i>
           </div>
           <div class="flex-grow-1 min-w-0">
-            <div class="text-secondary small fw-medium text-truncate">총 최종할부원금</div>
+            <div class="text-secondary small fw-medium text-truncate">총 할부원금</div>
             <div class="fs-4 fw-bold text-dark mb-0 lh-1 mt-1 text-truncate" title="<%= (stats.totalPrincipal || 0).toLocaleString() %>원">
               <%= (stats.totalPrincipal || 0).toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">원</span>
             </div>
@@ -108,6 +116,7 @@
               <option value="phone_num" <%= filters.searchType === 'phone_num' ? 'selected' : '' %>>개통번호 (휴대폰번호)</option>
               <option value="model_nm" <%= filters.searchType === 'model_nm' ? 'selected' : '' %>>단말기 모델명</option>
               <option value="plan_nm" <%= filters.searchType === 'plan_nm' ? 'selected' : '' %>>요금제</option>
+              <option value="join_category" <%= filters.searchType === 'join_category' ? 'selected' : '' %>>가입유형</option>
             </select>
           </div>
 
@@ -143,15 +152,13 @@
   <!-- Join Table Card -->
   <div class="card border-0 shadow-sm rounded-3">
     <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <div class="small text-muted">
-        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지
+      <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
+        <span>검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지</span>
+        <span class="text-secondary opacity-50">|</span>
+        <span>개통 최신 업로드: <strong class="text-success font-monospace"><%= stats.lastUploadDt || stats.openLastUpload || '-' %></strong></span>
       </div>
-      <div class="d-flex align-items-center gap-3">
-        <div class="small text-muted d-none d-md-block">
-          <i class="bi bi-shield-lock-fill text-secondary me-1"></i>고객명 <strong>2번째 글자 마스킹</strong>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <label class="small text-muted mb-0">표시 개수:</label>
+      <div class="d-flex align-items-center gap-2">
+        <label class="small text-muted mb-0">표시 개수:</label>
           <select class="form-select form-select-sm" style="width: auto;" onchange="changeLimit(this.value)">
             <option value="20" <%= pagination.limit === 20 ? 'selected' : '' %>>20개씩</option>
             <option value="30" <%= pagination.limit === 30 ? 'selected' : '' %>>30개씩</option>
@@ -170,10 +177,12 @@
             <col class="col-w-name">
             <col class="col-w-birth">
             <col class="col-w-phone">
+            <col class="col-w-join-category">
             <col class="col-w-opening-dt">
             <col class="col-w-model">
             <col class="col-w-color">
             <col class="col-w-plan">
+            <col class="col-w-period">
             <col class="col-w-option">
             <col class="col-w-principal">
           </colgroup>
@@ -183,12 +192,14 @@
               <th scope="col" class="text-center col-w-name">고객명</th>
               <th scope="col" class="text-center col-w-birth">생년월일</th>
               <th scope="col" class="text-center col-w-phone">개통번호</th>
+              <th scope="col" class="text-center col-w-join-category">가입유형</th>
               <th scope="col" class="text-center col-w-opening-dt">개통일자</th>
               <th scope="col" class="text-start col-w-model">모델명</th>
               <th scope="col" class="text-center col-w-color">색상</th>
               <th scope="col" class="text-start col-w-plan">요금제</th>
+              <th scope="col" class="text-center col-w-period">할부기간</th>
               <th scope="col" class="text-start col-w-option">약정옵션</th>
-              <th scope="col" class="text-end col-w-principal">최종할부원금</th>
+              <th scope="col" class="text-end col-w-principal">할부원금</th>
             </tr>
           </thead>
           <tbody>
@@ -200,9 +211,9 @@
                     <%= (pagination.page - 1) * pagination.limit + (idx + 1) %>
                   </td>
 
-                  <!-- 2. 고객명 (2번째 글자 마스킹 적용) -->
+                  <!-- 2. 고객명 (원본 이름 표출) -->
                   <td class="text-center col-w-name">
-                    <span class="fw-semibold text-dark"><%= row.masked_name %></span>
+                    <span class="fw-semibold text-dark"><%= row.cust_nm || row.user_nm || row.raw_name || '-' %></span>
                   </td>
 
                   <!-- 3. 생년월일 (YYMMDD) -->
@@ -215,40 +226,54 @@
                     <%= row.phone_num || row.phone || '-' %>
                   </td>
 
-                  <!-- 5. 개통일시 -->
+                  <!-- 5. 가입유형 -->
+                  <td class="text-center small col-w-join-category">
+                    <% if (row.join_category) { %>
+                      <span class="badge bg-light text-dark border"><%= row.join_category %></span>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
+
+                  <!-- 6. 개통일자 -->
                   <td class="text-center text-muted small col-w-opening-dt">
                     <%= row.opening_dt || '-' %>
                   </td>
 
-                  <!-- 6. 모델명 -->
+                  <!-- 7. 모델명 -->
                   <td class="text-start fw-medium text-dark col-w-model text-truncate" title="<%= row.model_nm || '' %>">
                     <%= row.model_nm || '-' %>
                   </td>
 
-                  <!-- 7. 색상 -->
+                  <!-- 8. 색상 -->
                   <td class="text-center small col-w-color">
                     <%= row.color || '-' %>
                   </td>
 
-                  <!-- 8. 요금제 -->
+                  <!-- 9. 요금제 -->
                   <td class="text-start small col-w-plan text-truncate" title="<%= row.plan_nm || '' %>">
                     <%= row.plan_nm || '-' %>
                   </td>
 
-                  <!-- 9. 약정옵션 -->
+                  <!-- 10. 할부기간 -->
+                  <td class="text-center small col-w-period text-truncate" title="<%= row.installment_period || '' %>">
+                    <%= row.installment_period || '-' %>
+                  </td>
+
+                  <!-- 11. 약정옵션 -->
                   <td class="text-start small col-w-option text-truncate" title="<%= row.agreement_opt || '' %>">
                     <%= row.agreement_opt || '-' %>
                   </td>
 
-                  <!-- 10. 최종할부원금 (출고가 - 공통지원금 - 추가지원금) -->
-                  <td class="text-end fw-bold text-primary col-w-principal" title="출고가: <%= row.factory_price_num.toLocaleString() %>원 - 공통지원금: <%= row.common_subsidy_num.toLocaleString() %>원 - 추가지원금: <%= row.add_subsidy_num.toLocaleString() %>원">
-                    <%= row.final_principal_num.toLocaleString() %><span class="text-primary-emphasis ms-1" style="font-size: 0.78rem;">원</span>
+                  <!-- 12. 할부원금 (엑셀 원본 할부원금) -->
+                  <td class="text-end fw-bold text-primary col-w-principal" title="할부원금: <%= (row.installment_principal_num || 0).toLocaleString() %>원">
+                    <%= (row.installment_principal_num || 0).toLocaleString() %><span class="text-primary-emphasis ms-1" style="font-size: 0.78rem;">원</span>
                   </td>
                 </tr>
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="10" class="text-center py-5 text-muted">
+                <td colspan="12" class="text-center py-5 text-muted">
                   <i class="bi bi-link-45deg fs-2 d-block mb-2 text-secondary"></i>
                   회원 정보와 개통 이력이 [생년월일] 및 [전화번호] 기준으로 일치하는 조인 데이터가 없습니다.<br>
                   <span class="small text-secondary mt-1 d-inline-block">

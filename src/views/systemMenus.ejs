@@ -1,0 +1,489 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+    <div>
+      <h1 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-diagram-3-fill text-primary"></i>
+        <span>메뉴 관리</span>
+      </h1>
+      <p class="text-muted small mb-0">대·중·소메뉴 계층 구조, 사이드바 노출 여부(USE/HIDE), 정렬 순서를 관리합니다.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+      <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm" onclick="openMenuModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>신규 메뉴 등록</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs (독립 페이지 탭 네비게이션) -->
+  <ul class="nav nav-tabs mb-4 border-bottom gap-1">
+    <li class="nav-item">
+      <a class="nav-link active fw-bold text-primary px-3 py-2 border-bottom-0" href="/system/menus">
+        <i class="bi bi-diagram-3-fill me-1"></i>계층형 메뉴 관리 (sys_menu)
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-secondary px-3 py-2" href="/system/configs">
+        <i class="bi bi-sliders me-1"></i>공통 설정 및 코드 관리 (sys_config)
+      </a>
+    </li>
+  </ul>
+
+  <!-- Global Alert Box -->
+  <div id="systemAlertBox" class="alert d-none py-2 px-3 small mb-3"></div>
+
+  <!-- Menu Table Card -->
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
+          <i class="bi bi-list-check text-primary"></i>
+          <span>대·중·소메뉴 계층 구조 목록</span>
+          <span class="badge bg-secondary-subtle text-dark ms-1"><%= menus.length %>건</span>
+        </h5>
+        <small class="text-muted">상위 메뉴(parent_id)와 정렬 순서(sort_order)를 기반으로 사이드바 메뉴를 동적 구성합니다.</small>
+      </div>
+      <div>
+        <span class="badge bg-light text-secondary border">
+          <i class="bi bi-info-circle me-1"></i>USE: 사이드바 노출 | HIDE: 사이드바 숨김
+        </span>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 user-table" style="min-width: 900px;">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="text-center" style="width: 60px;">ID</th>
+              <th scope="col" class="text-center" style="width: 80px;">계층</th>
+              <th scope="col" class="text-center" style="width: 140px;">상위 메뉴</th>
+              <th scope="col" class="text-center" style="width: 80px;">아이콘</th>
+              <th scope="col" class="text-start" style="width: 190px;">메뉴 이름</th>
+              <th scope="col" class="text-start" style="width: 220px;">이동 URL</th>
+              <th scope="col" class="text-center" style="width: 70px;">순서</th>
+              <th scope="col" class="text-center" style="width: 120px;">상태 토글</th>
+              <th scope="col" class="text-center" style="width: 90px;">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (menus && menus.length > 0) { %>
+              <% menus.forEach(m => { %>
+                <tr>
+                  <!-- 1. ID -->
+                  <td class="text-center text-muted small"><%= m.menu_id %></td>
+
+                  <!-- 2. 계층 Depth (대메뉴, 중메뉴, 소메뉴) -->
+                  <td class="text-center">
+                    <% if (m.menu_depth === 1) { %>
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">대메뉴</span>
+                    <% } else if (m.menu_depth === 2) { %>
+                      <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">중메뉴</span>
+                    <% } else { %>
+                      <span class="badge bg-secondary-subtle text-secondary border">소메뉴</span>
+                    <% } %>
+                  </td>
+
+                  <!-- 3. 상위 메뉴 (최상위 or 상위메뉴명 뱃지) -->
+                  <td class="text-center">
+                    <% if (m.parent_name) { %>
+                      <span class="badge bg-light text-dark border"><%= m.parent_name %></span>
+                    <% } else { %>
+                      <span class="badge bg-secondary-subtle text-secondary border">최상위</span>
+                    <% } %>
+                  </td>
+
+                  <!-- 4. 아이콘 (텍스트 없이 순수 아이콘만 노출) -->
+                  <td class="text-center">
+                    <i class="bi <%= m.menu_icon || 'bi-circle' %> fs-5 text-dark" title="<%= m.menu_icon || '-' %>"></i>
+                  </td>
+
+                  <!-- 5. 메뉴 이름 (계층 들여쓰기 시각화) -->
+                  <td class="text-start">
+                    <% if (m.menu_depth === 2) { %>
+                      <span class="text-secondary me-1 ms-2">└─</span>
+                      <strong class="text-dark"><%= m.menu_name %></strong>
+                    <% } else if (m.menu_depth === 3) { %>
+                      <span class="text-secondary me-1 ms-4">└──</span>
+                      <span class="text-dark"><%= m.menu_name %></span>
+                    <% } else { %>
+                      <span class="fw-bold text-dark fs-6"><%= m.menu_name %></span>
+                    <% } %>
+                  </td>
+
+                  <!-- 6. 이동 URL -->
+                  <td class="text-start">
+                    <code class="text-primary bg-primary-subtle px-2 py-1 rounded small"><%= m.menu_url || '#' %></code>
+                  </td>
+
+                  <!-- 7. 정렬 순서 -->
+                  <td class="text-center font-monospace fw-semibold"><%= m.sort_order %></td>
+
+                  <!-- 8. 상태 (USE / HIDE) 단일 원클릭 토글 버튼 -->
+                  <td class="text-center">
+                    <button type="button" 
+                      class="btn btn-sm <%= m.use_yn === 'Y' ? 'btn-success' : 'btn-danger' %> px-3 py-1 fw-bold shadow-xs btn-menu-toggle"
+                      data-id="<%= m.menu_id %>"
+                      data-status="<%= m.use_yn === 'Y' ? 'N' : 'Y' %>"
+                      data-name="<%= m.menu_name %>"
+                      onclick="toggleMenuStatus(this)"
+                      title="<%= m.use_yn === 'Y' ? '현재 USE 상태 (클릭 시 HIDE로 즉시 변경)' : '현재 HIDE 상태 (클릭 시 USE로 즉시 변경)' %>">
+                      <% if (m.use_yn === 'Y') { %>
+                        <i class="bi bi-check-circle-fill me-1"></i>USE
+                      <% } else { %>
+                        <i class="bi bi-eye-slash-fill me-1"></i>HIDE
+                      <% } %>
+                    </button>
+                  </td>
+
+                  <!-- 9. 관리 버튼 -->
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-secondary py-0 px-2 btn-edit-menu" title="메뉴 수정" data-menu="<%- encodeURIComponent(JSON.stringify(m)) %>">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger py-0 px-2" title="메뉴 삭제" onclick="deleteMenu(<%= m.menu_id %>, '<%= m.menu_name %>')">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  등록된 메뉴가 없습니다. 상단의 <strong>[신규 메뉴 등록]</strong> 버튼을 클릭하여 메뉴를 추가해 보세요.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ======================================================== -->
+<!-- MODAL: 메뉴 등록 / 수정 (sys_menu)                        -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalMenu" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="formMenu">
+        <input type="hidden" name="menu_id" id="menuIdInput">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold fs-6" id="modalMenuTitle">
+            <i class="bi bi-diagram-3 text-primary me-1"></i> 메뉴 등록
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 상위 메뉴 선택 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">상위 메뉴 (계층 설정)</label>
+            <select class="form-select form-select-sm" name="parent_id" id="menuParentSelect" onchange="autoSetDepth(this.value)">
+              <option value="">[최상위 대메뉴]</option>
+              <% menus.filter(m => m.menu_depth === 1).forEach(m => { %>
+                <option value="<%= m.menu_id %>" data-depth="2">대메뉴: <%= m.menu_name %></option>
+              <% }); %>
+              <% menus.filter(m => m.menu_depth === 2).forEach(m => { %>
+                <option value="<%= m.menu_id %>" data-depth="3">ㄴ 중메뉴: <%= m.menu_name %></option>
+              <% }); %>
+            </select>
+            <div class="form-text small">상위 메뉴를 지정하면 자동으로 대·중·소메뉴 계층이 자동 설정됩니다.</div>
+          </div>
+
+          <!-- 메뉴 이름 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">메뉴 이름 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="menu_name" id="menuNameInput" placeholder="예: 회원 관리, 시스템 설정" required>
+          </div>
+
+          <!-- 이동 URL -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">이동 URL 링크 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="menu_url" id="menuUrlInput" placeholder="예: /users, /activations, /system/menus" value="#" required>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <!-- 메뉴 아이콘 -->
+            <div class="col-sm-7">
+              <label class="form-label small fw-semibold text-secondary">부트스트랩 아이콘 클래스</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light" id="iconPreviewBox"><i class="bi bi-circle"></i></span>
+                <input type="text" class="form-control" name="menu_icon" id="menuIconInput" placeholder="예: bi-people-fill" value="bi-circle" oninput="updateIconPreview(this.value)">
+              </div>
+            </div>
+
+            <!-- 정렬 순서 -->
+            <div class="col-sm-5">
+              <label class="form-label small fw-semibold text-secondary">정렬 순서</label>
+              <input type="number" class="form-control form-control-sm" name="sort_order" id="menuSortInput" value="1" min="0">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <!-- 메뉴 계층 Depth -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">메뉴 계층</label>
+              <select class="form-select form-select-sm" name="menu_depth" id="menuDepthSelect">
+                <option value="1">대메뉴</option>
+                <option value="2">중메뉴</option>
+                <option value="3">소메뉴</option>
+              </select>
+            </div>
+
+            <!-- 상태 (USE / HIDE) -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">상태 (표출 여부)</label>
+              <select class="form-select form-select-sm" name="use_yn" id="menuUseSelect">
+                <option value="Y">USE (사이드바 노출)</option>
+                <option value="N">HIDE (사이드바 숨김)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">취소</button>
+          <button type="submit" class="btn btn-sm btn-primary px-3" id="btnSaveMenu">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Frontend JavaScript -->
+<script>
+  // ==========================================
+  // 메뉴 상태 원클릭 단일 토글 (USE <-> HIDE)
+  // 최상단 배치: Bootstrap 로드 전에도 즉시 사용 가능
+  // ==========================================
+  async function toggleMenuStatus(btnOrId, targetStatusParam, menuNameParam) {
+    let btn = null;
+    let menuId;
+    let targetStatus;
+    let menuName;
+
+    if (btnOrId instanceof HTMLElement) {
+      btn = btnOrId;
+      menuId = btn.dataset.id;
+      targetStatus = btn.dataset.status || targetStatusParam;
+      menuName = btn.dataset.name || menuNameParam || '';
+    } else {
+      menuId = btnOrId;
+      targetStatus = targetStatusParam;
+      menuName = menuNameParam || '';
+      btn = document.querySelector(`.btn-menu-toggle[data-id="${menuId}"]`);
+    }
+
+    if (!menuId) {
+      console.error('Menu ID is missing for toggleMenuStatus');
+      return;
+    }
+
+    if (btn && btn.disabled) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>변경중...';
+    }
+
+    const isTargetHide = targetStatus === 'N';
+
+    try {
+      const res = await fetch(`/api/system/menus/${menuId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ use_yn: targetStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(`[${menuName}] 메뉴가 [${isTargetHide ? 'HIDE (사이드바 숨김)' : 'USE (사이드바 노출)'}] 상태로 변경되었습니다.`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
+      } else {
+        alert('상태 변경 실패: ' + (data.message || '알 수 없는 오류'));
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = isTargetHide 
+            ? '<i class="bi bi-check-circle-fill me-1"></i>USE' 
+            : '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
+        }
+      }
+    } catch (err) {
+      alert('통신 에러가 발생했습니다: ' + err.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = isTargetHide 
+          ? '<i class="bi bi-check-circle-fill me-1"></i>USE' 
+          : '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
+      }
+    }
+  }
+  // 전역 window 객체에 명시적 등록 (인라인 onclick 호환 보장)
+  window.toggleMenuStatus = toggleMenuStatus;
+
+  // 알림 메시지 헬퍼
+  function showAlert(msg, type = 'success') {
+    const box = document.getElementById('systemAlertBox');
+    box.className = `alert alert-${type} py-2 px-3 small mb-3`;
+    box.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} me-1"></i> ${msg}`;
+    box.classList.remove('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      box.classList.add('d-none');
+    }, 4000);
+  }
+
+  // 아이콘 미리보기 갱신
+  function updateIconPreview(cls) {
+    const box = document.getElementById('iconPreviewBox');
+    box.innerHTML = `<i class="bi ${cls || 'bi-circle'} text-primary"></i>`;
+  }
+
+  // 상위 메뉴 변경 시 계층(Depth) 자동 설정
+  function autoSetDepth(parentId) {
+    const depthSelect = document.getElementById('menuDepthSelect');
+    if (!parentId) {
+      depthSelect.value = '1';
+    } else {
+      const parentOption = document.querySelector(`#menuParentSelect option[value="${parentId}"]`);
+      const targetDepth = parentOption ? parentOption.getAttribute('data-depth') : '2';
+      depthSelect.value = targetDepth || '2';
+    }
+  }
+
+  // ==========================================
+  // 메뉴 모달 관리 (지연 생성으로 Bootstrap 오류 방지)
+  // ==========================================
+  function openMenuModal() {
+    document.getElementById('formMenu').reset();
+    document.getElementById('menuIdInput').value = '';
+    document.getElementById('modalMenuTitle').innerHTML = '<i class="bi bi-diagram-3 text-primary me-1"></i> 신규 메뉴 등록';
+    document.getElementById('menuDepthSelect').value = '1';
+    document.getElementById('menuUseSelect').value = 'Y';
+    updateIconPreview('bi-circle');
+    const modalEl = document.getElementById('modalMenu');
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+    if (modal) modal.show();
+  }
+
+  function editMenu(m) {
+    document.getElementById('menuIdInput').value = m.menu_id;
+    document.getElementById('modalMenuTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-1"></i> 메뉴 수정: ' + m.menu_name;
+    document.getElementById('menuParentSelect').value = m.parent_id || '';
+    document.getElementById('menuNameInput').value = m.menu_name || '';
+    document.getElementById('menuUrlInput').value = m.menu_url || '#';
+    document.getElementById('menuIconInput').value = m.menu_icon || 'bi-circle';
+    document.getElementById('menuSortInput').value = m.sort_order || 0;
+    document.getElementById('menuDepthSelect').value = m.menu_depth || 1;
+    document.getElementById('menuUseSelect').value = m.use_yn || 'Y';
+    updateIconPreview(m.menu_icon);
+    const modalEl = document.getElementById('modalMenu');
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+    if (modal) modal.show();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // 메뉴 수정 버튼 이벤트
+    document.querySelectorAll('.btn-edit-menu').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const menu = JSON.parse(decodeURIComponent(btn.dataset.menu));
+          editMenu(menu);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    });
+
+    // 단일 토글 버튼 이벤트 리스너 추가 바인딩 (onclick 보조 및 완전 호환)
+    document.querySelectorAll('.btn-menu-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (btn.disabled) return;
+        toggleMenuStatus(btn);
+      });
+    });
+  });
+
+  document.getElementById('formMenu').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const menuId = document.getElementById('menuIdInput').value;
+    const isEdit = !!menuId;
+
+    const payload = {
+      parent_id: document.getElementById('menuParentSelect').value || null,
+      menu_name: document.getElementById('menuNameInput').value.trim(),
+      menu_url: document.getElementById('menuUrlInput').value.trim(),
+      menu_icon: document.getElementById('menuIconInput').value.trim(),
+      menu_depth: parseInt(document.getElementById('menuDepthSelect').value, 10),
+      sort_order: parseInt(document.getElementById('menuSortInput').value, 10) || 0,
+      use_yn: document.getElementById('menuUseSelect').value
+    };
+
+    const url = isEdit ? `/api/system/menus/${menuId}` : '/api/system/menus';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        const modalEl = document.getElementById('modalMenu');
+        const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getInstance(modalEl) : null;
+        if (modal) modal.hide();
+        showAlert(data.message);
+        setTimeout(() => location.reload(), 600);
+      } else {
+        alert('오류: ' + data.message);
+      }
+    } catch (err) {
+      alert('요청 중 통신 에러 발생: ' + err.message);
+    }
+  });
+
+  async function deleteMenu(menuId, menuName) {
+    if (!confirm(`[${menuName}] 메뉴를 삭제하시겠습니까?`)) return;
+
+    try {
+      const res = await fetch(`/api/system/menus/${menuId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(data.message);
+        setTimeout(() => location.reload(), 600);
+      } else {
+        alert('삭제 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('삭제 중 통신 에러 발생: ' + err.message);
+    }
+  }
+</script>
+
+  async function deleteMenu(menuId, menuName) {
+    if (!confirm(`[${menuName}] 메뉴를 삭제하시겠습니까?`)) return;
+
+    try {
+      const res = await fetch(`/api/system/menus/${menuId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(data.message);
+        setTimeout(() => location.reload(), 600);
+      } else {
+        alert('삭제 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('삭제 중 통신 에러 발생: ' + err.message);
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>
+

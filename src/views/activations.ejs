@@ -5,7 +5,12 @@
   <!-- Page Header -->
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
-      <h1 class="h3 fw-bold mb-1">개통 이력 관리</h1>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+        <h1 class="h3 fw-bold mb-0">개통 이력 관리</h1>
+        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2.5 py-1.5 font-monospace">
+          <i class="bi bi-clock-history me-1"></i>최신 업로드 일자: <strong><%= stats.lastUploadDt || '-' %></strong>
+        </span>
+      </div>
       <p class="text-muted small mb-0">통신사 단말기 개통 이력 데이터 조회 및 엑셀 일괄 업로드(Bulk Insert)를 지원합니다.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
@@ -106,6 +111,8 @@
               <option value="cust_nm" <%= filters.searchType === 'cust_nm' ? 'selected' : '' %>>고객명 (cust_nm)</option>
               <option value="phone_num" <%= filters.searchType === 'phone_num' ? 'selected' : '' %>>개통번호 (phone_num)</option>
               <option value="model_nm" <%= filters.searchType === 'model_nm' ? 'selected' : '' %>>모델명 (model_nm)</option>
+              <option value="join_category" <%= filters.searchType === 'join_category' ? 'selected' : '' %>>가입유형 (join_category)</option>
+              <option value="installment_period" <%= filters.searchType === 'installment_period' ? 'selected' : '' %>>할부기간 (installment_period)</option>
             </select>
           </div>
 
@@ -140,9 +147,11 @@
 
   <!-- Table Card -->
   <div class="card border-0 shadow-sm rounded-3">
-    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
-      <div class="small text-muted">
-        검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
+        <span>검색 결과: <strong class="text-dark"><%= pagination.total.toLocaleString() %></strong>건 | 현재 <strong class="text-primary"><%= pagination.page %></strong> / 최대 <strong class="text-dark"><%= pagination.totalPages || 1 %></strong> 페이지</span>
+        <span class="text-secondary opacity-50">|</span>
+        <span>최신 업로드: <strong class="text-success font-monospace"><%= stats.lastUploadDt || '-' %></strong></span>
       </div>
       <div class="d-flex align-items-center gap-2">
         <label class="small text-muted mb-0">표시 개수:</label>
@@ -161,11 +170,14 @@
           <colgroup>
             <col class="col-w-no">
             <col class="col-w-name">
-            <col class="col-w-phone">
             <col class="col-w-birth">
+            <col class="col-w-phone">
+            <col class="col-w-join-category">
+            <col class="col-w-opening-dt">
             <col class="col-w-model">
             <col class="col-w-color">
-            <col class="col-w-opening-dt">
+            <col class="col-w-period">
+            <col class="col-w-principal">
             <col class="col-w-option">
             <col class="col-w-memo">
             <col class="col-w-action">
@@ -174,11 +186,14 @@
             <tr>
               <th scope="col" class="text-center col-w-no">No</th>
               <th scope="col" class="text-center col-w-name">고객명</th>
-              <th scope="col" class="text-center col-w-phone">개통번호</th>
               <th scope="col" class="text-center col-w-birth">생년월일</th>
+              <th scope="col" class="text-center col-w-phone">개통번호</th>
+              <th scope="col" class="text-center col-w-join-category">가입유형</th>
+              <th scope="col" class="text-center col-w-opening-dt">개통일자</th>
               <th scope="col" class="text-start col-w-model">모델명</th>
               <th scope="col" class="text-center col-w-color">색상</th>
-              <th scope="col" class="text-center col-w-opening-dt">개통일자</th>
+              <th scope="col" class="text-center col-w-period">할부기간</th>
+              <th scope="col" class="text-end col-w-principal">할부원금</th>
               <th scope="col" class="text-start col-w-option">판매약정옵션</th>
               <th scope="col" class="text-start col-w-memo">비고 1</th>
               <th scope="col" class="text-center col-w-action">관리</th>
@@ -188,15 +203,51 @@
             <% if (items && items.length > 0) { %>
               <% items.forEach((l, idx) => { %>
                 <tr>
+                  <!-- 1. No -->
                   <td class="text-center text-muted small col-w-no"><%= (pagination.page - 1) * pagination.limit + (idx + 1) %></td>
+
+                  <!-- 2. 고객명 -->
                   <td class="text-center fw-semibold text-dark col-w-name"><%= l.cust_nm %></td>
-                  <td class="text-center font-monospace small col-w-phone"><%= l.phone_num %></td>
+
+                  <!-- 3. 생년월일 (YYMMDD) -->
                   <td class="text-center text-secondary small col-w-birth"><%= l.birth_dt || '-' %></td>
-                  <td class="text-start fw-medium text-dark col-w-model text-truncate" title="<%= l.model_nm || '' %>"><%= l.model_nm || '-' %></td>
-                  <td class="text-center small col-w-color"><%= l.color || '-' %></td>
+
+                  <!-- 4. 개통번호 -->
+                  <td class="text-center font-monospace small col-w-phone"><%= l.phone_num %></td>
+
+                  <!-- 5. 가입유형 -->
+                  <td class="text-center small col-w-join-category">
+                    <% if (l.join_category) { %>
+                      <span class="badge bg-light text-dark border"><%= l.join_category %></span>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
+
+                  <!-- 6. 개통일자 -->
                   <td class="text-center text-muted small col-w-opening-dt"><%= l.opening_dt || '-' %></td>
+
+                  <!-- 7. 모델명 -->
+                  <td class="text-start fw-medium text-dark col-w-model text-truncate" title="<%= l.model_nm || '' %>"><%= l.model_nm || '-' %></td>
+
+                  <!-- 8. 색상 -->
+                  <td class="text-center small col-w-color"><%= l.color || '-' %></td>
+
+                  <!-- 9. 할부기간 -->
+                  <td class="text-center small col-w-period text-truncate" title="<%= l.installment_period || '' %>"><%= l.installment_period || '-' %></td>
+
+                  <!-- 10. 할부원금 (엑셀 원본 할부원금) -->
+                  <td class="text-end fw-semibold text-primary col-w-principal">
+                    <%= (l.installment_principal_num || 0).toLocaleString() %><span class="text-primary-emphasis ms-1" style="font-size: 0.78rem;">원</span>
+                  </td>
+
+                  <!-- 11. 판매약정옵션 -->
                   <td class="text-start small col-w-option text-truncate" title="<%= l.agreement_opt || '' %>"><%= l.agreement_opt || '-' %></td>
+
+                  <!-- 12. 비고 1 -->
                   <td class="td-memo text-muted small text-start col-w-memo" title="<%= l.remark1 || '' %>"><%= l.remark1 || '-' %></td>
+
+                  <!-- 13. 관리 -->
                   <td class="text-center col-w-action">
                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-delete-activation" data-id="<%= l.id %>" data-name="<%= l.cust_nm %>" title="개통 데이터 삭제">
                       <i class="bi bi-trash"></i>
@@ -206,7 +257,7 @@
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="10" class="text-center py-5 text-muted">
+                <td colspan="13" class="text-center py-5 text-muted">
                   <i class="bi bi-phone fs-2 d-block mb-2 text-secondary"></i>
                   등록된 개통 이력 데이터가 없습니다. 상단의 <strong>[엑셀 업로드]</strong> 버튼을 눌러 개통 엑셀 파일을 업로드해 보세요.
                 </td>

@@ -101,10 +101,16 @@ const ActivationModel = {
           } else if (searchType === 'seller_nm') {
             whereClauses.push('seller_nm LIKE ?');
             params.push(pattern);
+          } else if (searchType === 'join_category') {
+            whereClauses.push('join_category LIKE ?');
+            params.push(pattern);
+          } else if (searchType === 'installment_period') {
+            whereClauses.push('installment_period LIKE ?');
+            params.push(pattern);
           } else {
             // all
-            whereClauses.push('(cust_nm LIKE ? OR phone_num LIKE ? OR mgmt_cd LIKE ? OR model_nm LIKE ? OR agency_cd LIKE ? OR serial_num LIKE ? OR seller_nm LIKE ?)');
-            params.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern);
+            whereClauses.push('(cust_nm LIKE ? OR phone_num LIKE ? OR mgmt_cd LIKE ? OR model_nm LIKE ? OR agency_cd LIKE ? OR serial_num LIKE ? OR seller_nm LIKE ? OR join_category LIKE ? OR installment_period LIKE ?)');
+            params.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern, pattern, pattern);
           }
         }
 
@@ -145,6 +151,9 @@ const ActivationModel = {
              seller_nm,
              agency_cd,
              agreement_opt,
+             join_category,
+             installment_period,
+             installment_principal,
              remark1,
              DATE_FORMAT(created_dt, '%Y-%m-%d %H:%i:%s') as created_dt
            FROM activation_log ${whereSql} ORDER BY opening_dt DESC, id DESC LIMIT ? OFFSET ?`,
@@ -175,12 +184,16 @@ const ActivationModel = {
         if (searchType === 'mgmt_cd') return l.mgmt_cd && l.mgmt_cd.toLowerCase().includes(kw);
         if (searchType === 'serial_num') return l.serial_num && l.serial_num.toLowerCase().includes(kw);
         if (searchType === 'seller_nm') return l.seller_nm && l.seller_nm.toLowerCase().includes(kw);
+        if (searchType === 'join_category') return l.join_category && l.join_category.toLowerCase().includes(kw);
+        if (searchType === 'installment_period') return l.installment_period && l.installment_period.toLowerCase().includes(kw);
         return (
           (l.cust_nm && l.cust_nm.toLowerCase().includes(kw)) ||
           (l.phone_num && l.phone_num.includes(kw)) ||
           (l.mgmt_cd && l.mgmt_cd.toLowerCase().includes(kw)) ||
           (l.agency_cd && l.agency_cd.toLowerCase().includes(kw)) ||
-          (l.model_nm && l.model_nm.toLowerCase().includes(kw))
+          (l.model_nm && l.model_nm.toLowerCase().includes(kw)) ||
+          (l.join_category && l.join_category.toLowerCase().includes(kw)) ||
+          (l.installment_period && l.installment_period.toLowerCase().includes(kw))
         );
       });
     }
@@ -218,25 +231,58 @@ const ActivationModel = {
    * 통계 집계
    */
   async getStats() {
+    let lastUploadDt = '-';
+
     if (db.getDbStatus().connected) {
       try {
+        // 1. sys_config 에서 OPEN_EXCEL 최근 업로드 일시 확인
+        try {
+          const [cfgRows] = await db.query("SELECT item_value FROM sys_config WHERE group_code = 'UPLOAD_META' AND item_code = 'OPEN_EXCEL'");
+          if (cfgRows && cfgRows[0] && cfgRows[0].item_value && cfgRows[0].item_value !== '-') {
+            lastUploadDt = cfgRows[0].item_value;
+          }
+        } catch (e) {}
+
         const [rows] = await db.query(`
           SELECT 
             COUNT(*) as totalCount,
             COUNT(DISTINCT agency_cd) as agencyCount,
             COUNT(DISTINCT model_nm) as modelCount,
-            COUNT(CASE WHEN DATE(created_dt) = CURDATE() THEN 1 END) as todayCount
+            COUNT(CASE WHEN DATE(created_dt) = CURDATE() THEN 1 END) as todayCount,
+            MAX(DATE_FORMAT(created_dt, '%Y-%m-%d %H:%i:%s')) as maxCreatedDt
           FROM activation_log
         `);
         const s = rows[0] || {};
+
+        if ((!lastUploadDt || lastUploadDt === '-') && s.maxCreatedDt) {
+          lastUploadDt = s.maxCreatedDt;
+        }
+
         return {
           totalCount: Number(s.totalCount) || 0,
           agencyCount: Number(s.agencyCount) || 0,
           modelCount: Number(s.modelCount) || 0,
-          todayCount: Number(s.todayCount) || 0
+          todayCount: Number(s.todayCount) || 0,
+          lastUploadDt
         };
       } catch (err) {
         console.error('MySQL ActivationModel.getStats Error:', err.message);
+      }
+    }
+
+    try {
+      const SystemModel = require('./systemModel');
+      const allConfigs = await SystemModel.getAllConfigs({});
+      const openCfg = allConfigs.find(c => c.group_code === 'UPLOAD_META' && c.item_code === 'OPEN_EXCEL');
+      if (openCfg && openCfg.item_value && openCfg.item_value !== '-') {
+        lastUploadDt = openCfg.item_value;
+      }
+    } catch (e) {}
+
+    if (lastUploadDt === '-' && mockActivations.length > 0) {
+      const latest = mockActivations[mockActivations.length - 1];
+      if (latest && latest.created_dt) {
+        lastUploadDt = latest.created_dt;
       }
     }
 
@@ -244,7 +290,8 @@ const ActivationModel = {
       totalCount: mockActivations.length,
       agencyCount: new Set(mockActivations.map(m => m.agency_cd).filter(Boolean)).size,
       modelCount: new Set(mockActivations.map(m => m.model_nm).filter(Boolean)).size,
-      todayCount: mockActivations.length
+      todayCount: mockActivations.length,
+      lastUploadDt
     };
   },
 

@@ -1,0 +1,995 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+    <div>
+      <h1 class="h3 fw-bold mb-1">시스템 설정 (sys_menu / sys_config)</h1>
+      <p class="text-muted small mb-0">포털 대·중·소메뉴 계층 구조와 최근 엑셀 업로드 일시, 공인 IP 및 공통 코드를 통합 관리합니다.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+      <!-- IP 감지 버튼 -->
+      <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 shadow-sm" id="btnDetectIp">
+        <i class="bi bi-broadcast"></i>
+        <span>공인 IP 자동 감지/갱신</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise"></i> 새로고침
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics Summary Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Card 1: 회원정보 최근 업로드 -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary-subtle text-primary me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+            <i class="bi bi-person-up fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">회원 엑셀 최근 업로드</div>
+            <div class="fs-6 fw-bold text-dark mb-0 mt-1 text-truncate" id="summaryMemberUpload" title="<%= meta.memberLastUpload %>">
+              <%= meta.memberLastUpload %>
+            </div>
+            <span class="badge bg-primary-subtle text-primary-emphasis mt-1" style="font-size: 0.7rem;">MEMBER_EXCEL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: 개통정보 최근 업로드 -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-success-subtle text-success me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+            <i class="bi bi-phone-vibrate fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">개통 엑셀 최근 업로드</div>
+            <div class="fs-6 fw-bold text-dark mb-0 mt-1 text-truncate" id="summaryOpenUpload" title="<%= meta.openLastUpload %>">
+              <%= meta.openLastUpload %>
+            </div>
+            <span class="badge bg-success-subtle text-success-emphasis mt-1" style="font-size: 0.7rem;">OPEN_EXCEL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: 내 공인 IP 주소 -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-info-subtle text-info me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+            <i class="bi bi-hdd-network fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">내 공인 IP 주소</div>
+            <div class="fs-6 fw-bold font-monospace text-dark mb-0 mt-1 text-truncate" id="summaryPublicIp">
+              <%= meta.publicIp %>
+            </div>
+            <span class="badge bg-info-subtle text-info-emphasis mt-1" style="font-size: 0.7rem;">PUBLIC_IP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: 등록 메뉴 / 설정 수 -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="rounded-3 d-flex align-items-center justify-content-center bg-warning-subtle text-warning me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+            <i class="bi bi-sliders fs-4"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="text-secondary small fw-medium text-truncate">시스템 등록 리소스</div>
+            <div class="fs-6 fw-bold text-dark mb-0 mt-1">
+              메뉴 <span class="text-primary"><%= menus.length %></span>개 / 설정 <span class="text-success"><%= configs.length %></span>개
+            </div>
+            <span class="badge bg-warning-subtle text-warning-emphasis mt-1" style="font-size: 0.7rem;">sys_menu / sys_config</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Alert Box -->
+  <div id="systemAlertBox" class="alert d-none py-2 px-3 small mb-3"></div>
+
+  <!-- Sections Quick Jump Banner (탭 대신 한눈에 바로가기 지원) -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 p-2 bg-light rounded-3 border">
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-secondary small fw-semibold ms-2"><i class="bi bi-compass me-1"></i>섹션 바로가기:</span>
+      <a href="#section-menus" class="btn btn-sm btn-white border bg-white d-flex align-items-center gap-2 px-3 py-1 rounded-pill text-dark fw-semibold shadow-sm">
+        <i class="bi bi-diagram-3 text-primary"></i>
+        <span>1. 계층형 메뉴 관리</span>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><%= menus.length %></span>
+      </a>
+      <a href="#section-configs" class="btn btn-sm btn-white border bg-white d-flex align-items-center gap-2 px-3 py-1 rounded-pill text-dark fw-semibold shadow-sm">
+        <i class="bi bi-sliders text-success"></i>
+        <span>2. 공통 설정 및 코드 관리</span>
+        <span class="badge bg-success-subtle text-success border border-success-subtle"><%= configs.length %></span>
+      </a>
+    </div>
+    <div class="small text-muted me-2 d-none d-md-block">
+      <i class="bi bi-check2-circle text-success me-1"></i>한 화면에서 메뉴와 공통 설정을 동시에 통합 관리합니다.
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SECTION 1: 메뉴 관리 (sys_menu)                          -->
+  <!-- ======================================================== -->
+  <section id="section-menus" class="mb-5">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
+              <i class="bi bi-list-check text-primary"></i>
+              <span>대·중·소메뉴 계층 구조 목록</span>
+            </h5>
+            <small class="text-muted">상위 메뉴(parent_id)와 정렬 순서(sort_order)를 기반으로 계층 구조를 관리합니다.</small>
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm" onclick="openMenuModal()">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>신규 메뉴 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 user-table" style="min-width: 950px;">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="text-center" style="width: 60px;">ID</th>
+                  <th scope="col" class="text-center" style="width: 80px;">계층</th>
+                  <th scope="col" class="text-center" style="width: 130px;">상위 메뉴</th>
+                  <th scope="col" class="text-center" style="width: 120px;">아이콘</th>
+                  <th scope="col" class="text-start" style="width: 180px;">메뉴 이름</th>
+                  <th scope="col" class="text-start" style="width: 200px;">이동 URL</th>
+                  <th scope="col" class="text-center" style="width: 70px;">순서</th>
+                  <th scope="col" class="text-center" style="width: 100px;">상태 (USE/HIDE)</th>
+                  <th scope="col" class="text-center" style="width: 90px;">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (menus && menus.length > 0) { %>
+                  <% menus.forEach(m => { %>
+                    <tr>
+                      <!-- 1. ID -->
+                      <td class="text-center text-muted small"><%= m.menu_id %></td>
+
+                      <!-- 2. 계층 Depth (괄호 없이 깔끔하게 표출) -->
+                      <td class="text-center">
+                        <% if (m.menu_depth === 1) { %>
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle">대메뉴</span>
+                        <% } else if (m.menu_depth === 2) { %>
+                          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">중메뉴</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary-subtle text-secondary border">소메뉴</span>
+                        <% } %>
+                      </td>
+
+                      <!-- 3. 상위 메뉴 -->
+                      <td class="text-center">
+                        <% if (m.parent_name) { %>
+                          <span class="badge bg-light text-dark border"><%= m.parent_name %></span>
+                        <% } else { %>
+                          <span class="badge bg-secondary-subtle text-secondary border">최상위</span>
+                        <% } %>
+                      </td>
+
+                      <!-- 4. 아이콘 미리보기 -->
+                      <td class="text-center">
+                        <div class="d-inline-flex align-items-center gap-1 bg-light px-2 py-1 rounded small border">
+                          <i class="bi <%= m.menu_icon || 'bi-circle' %> text-primary fs-6"></i>
+                          <code class="small text-muted" style="font-size: 0.72rem;"><%= m.menu_icon || '-' %></code>
+                        </div>
+                      </td>
+
+                      <!-- 5. 메뉴 이름 (계층 들여쓰기 시각화) -->
+                      <td class="text-start">
+                        <% if (m.menu_depth === 2) { %>
+                          <span class="text-secondary me-1 ms-2">└─</span>
+                          <strong class="text-dark"><%= m.menu_name %></strong>
+                        <% } else if (m.menu_depth === 3) { %>
+                          <span class="text-secondary me-1 ms-4">└──</span>
+                          <span class="text-dark"><%= m.menu_name %></span>
+                        <% } else { %>
+                          <span class="fw-bold text-dark fs-6"><%= m.menu_name %></span>
+                        <% } %>
+                      </td>
+
+                      <!-- 6. 이동 URL -->
+                      <td class="text-start">
+                        <code class="text-primary bg-primary-subtle px-2 py-1 rounded small"><%= m.menu_url || '#' %></code>
+                      </td>
+
+                      <!-- 7. 정렬 순서 -->
+                      <td class="text-center font-monospace fw-semibold"><%= m.sort_order %></td>
+
+                      <!-- 8. 상태 (USE / HIDE) 단일 원클릭 토글 버튼 -->
+                      <td class="text-center">
+                        <button type="button" 
+                          class="btn btn-sm <%= m.use_yn === 'Y' ? 'btn-success' : 'btn-danger' %> px-3 py-1 fw-bold shadow-xs btn-menu-toggle"
+                          data-id="<%= m.menu_id %>"
+                          data-status="<%= m.use_yn === 'Y' ? 'N' : 'Y' %>"
+                          data-name="<%= m.menu_name %>"
+                          onclick="toggleMenuStatus(this)"
+                          title="<%= m.use_yn === 'Y' ? '현재 USE 상태 (클릭 시 HIDE로 즉시 변경)' : '현재 HIDE 상태 (클릭 시 USE로 즉시 변경)' %>">
+                          <% if (m.use_yn === 'Y') { %>
+                            <i class="bi bi-check-circle-fill me-1"></i>USE
+                          <% } else { %>
+                            <i class="bi bi-eye-slash-fill me-1"></i>HIDE
+                          <% } %>
+                        </button>
+                      </td>
+
+                      <!-- 9. 관리 버튼 -->
+                      <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                          <button type="button" class="btn btn-outline-secondary py-0 px-2 btn-edit-menu" title="메뉴 수정" data-menu="<%- encodeURIComponent(JSON.stringify(m)) %>">
+                            <i class="bi bi-pencil-square"></i>
+                          </button>
+                          <button type="button" class="btn btn-outline-danger py-0 px-2" title="메뉴 삭제" onclick="deleteMenu(<%= m.menu_id %>, '<%= m.menu_name %>')">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                      등록된 메뉴가 없습니다. 상단의 <strong>[신규 메뉴 등록]</strong> 버튼을 클릭하여 메뉴를 추가해 보세요.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- SECTION 2: 공통 설정 및 코드 관리 (sys_config)            -->
+  <!-- ======================================================== -->
+  <section id="section-configs" class="mb-5">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
+              <i class="bi bi-sliders text-success"></i>
+              <span>공통 설정 및 코드 목록 (Key-Value 통합)</span>
+            </h5>
+            <small class="text-muted">그룹 코드(`group_code`)와 항목 코드(`item_code`)를 유니크 키로 시스템 설정을 동적 관리합니다.</small>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <!-- 그룹 필터 -->
+            <select class="form-select form-select-sm" style="width: auto;" onchange="filterConfigGroup(this.value)">
+              <option value="">전체 그룹 코드</option>
+              <% groupCodes.forEach(g => { %>
+                <option value="<%= g %>" <%= groupFilter === g ? 'selected' : '' %>><%= g %></option>
+              <% }); %>
+            </select>
+
+            <button type="button" class="btn btn-sm btn-success d-flex align-items-center gap-1 shadow-sm" onclick="openConfigModal()">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>신규 설정/코드 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 user-table" style="min-width: 1050px;">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="text-center" style="width: 50px;">ID</th>
+                  <th scope="col" class="text-center" style="width: 140px;">그룹 코드</th>
+                  <th scope="col" class="text-start" style="width: 160px;">항목 코드</th>
+                  <th scope="col" class="text-start" style="width: 180px;">항목 명칭</th>
+                  <th scope="col" class="text-start" style="width: 220px;">설정 값 (Value)</th>
+                  <th scope="col" class="text-start" style="width: 200px;">설명</th>
+                  <th scope="col" class="text-center" style="width: 60px;">순서</th>
+                  <th scope="col" class="text-center" style="width: 75px;">사용</th>
+                  <th scope="col" class="text-center" style="width: 85px;">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (configs && configs.length > 0) { %>
+                  <% configs.forEach(c => { %>
+                    <tr>
+                      <!-- ID -->
+                      <td class="text-center text-muted small"><%= c.id %></td>
+
+                      <!-- 그룹 코드 -->
+                      <td class="text-center">
+                        <span class="badge bg-secondary-subtle text-dark border font-monospace"><%= c.group_code %></span>
+                      </td>
+
+                      <!-- 항목 코드 -->
+                      <td class="text-start font-monospace fw-semibold text-primary">
+                        <%= c.item_code %>
+                      </td>
+
+                      <!-- 항목 명칭 -->
+                      <td class="text-start fw-medium text-dark">
+                        <%= c.item_name %>
+                      </td>
+
+                      <!-- 설정 값 (Value) -->
+                      <td class="text-start">
+                        <div class="d-flex align-items-center gap-1">
+                          <code class="text-break bg-light px-2 py-1 rounded small border text-dark font-monospace flex-grow-1" style="max-height: 48px; overflow-y: auto;">
+                            <%= c.item_value !== null && c.item_value !== undefined ? c.item_value : '(null)' %>
+                          </code>
+                          <button type="button" class="btn btn-sm btn-link text-secondary p-0 btn-quick-edit" title="빠른 값 수정"
+                            data-id="<%= c.id %>"
+                            data-group="<%= c.group_code %>"
+                            data-item="<%= c.item_code %>"
+                            data-value="<%= c.item_value || '' %>">
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                        </div>
+                      </td>
+
+                      <!-- 설명 -->
+                      <td class="text-start small text-muted text-truncate" style="max-width: 200px;" title="<%= c.description || '' %>">
+                        <%= c.description || '-' %>
+                      </td>
+
+                      <!-- 순서 -->
+                      <td class="text-center font-monospace"><%= c.sort_order %></td>
+
+                      <!-- 사용 여부 -->
+                      <td class="text-center">
+                        <% if (c.use_yn === 'Y') { %>
+                          <span class="badge bg-success-subtle text-success">Y</span>
+                        <% } else { %>
+                          <span class="badge bg-danger-subtle text-danger">N</span>
+                        <% } %>
+                      </td>
+
+                      <!-- 관리 -->
+                      <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                          <button type="button" class="btn btn-outline-secondary py-0 px-2 btn-edit-config" title="상세 수정"
+                            data-config="<%- encodeURIComponent(JSON.stringify(c)) %>">
+                            <i class="bi bi-pencil-square"></i>
+                          </button>
+                          <button type="button" class="btn btn-outline-danger py-0 px-2" title="삭제" onclick="deleteConfig(<%= c.id %>, '<%= c.item_code %>')">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                      등록된 설정 데이터가 없습니다. 상단의 <strong>[신규 설정/코드 등록]</strong> 버튼을 클릭하여 추가해 보세요.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<!-- ======================================================== -->
+<!-- MODAL 1: 메뉴 등록 / 수정 (sys_menu)                     -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalMenu" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="formMenu">
+        <input type="hidden" name="menu_id" id="menuIdInput">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold fs-6" id="modalMenuTitle">
+            <i class="bi bi-diagram-3 text-primary me-1"></i> 메뉴 등록
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 상위 메뉴 선택 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">상위 메뉴 (계층 설정)</label>
+            <select class="form-select form-select-sm" name="parent_id" id="menuParentSelect" onchange="autoSetDepth(this.value)">
+              <option value="">[최상위 대메뉴]</option>
+              <% menus.filter(m => m.menu_depth === 1).forEach(m => { %>
+                <option value="<%= m.menu_id %>" data-depth="2">대메뉴: <%= m.menu_name %></option>
+              <% }); %>
+              <% menus.filter(m => m.menu_depth === 2).forEach(m => { %>
+                <option value="<%= m.menu_id %>" data-depth="3">ㄴ 중메뉴: <%= m.menu_name %></option>
+              <% }); %>
+            </select>
+            <div class="form-text small">상위 메뉴를 지정하면 자동으로 대·중·소메뉴 계층이 자동 설정됩니다.</div>
+          </div>
+
+          <!-- 메뉴 이름 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">메뉴 이름 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="menu_name" id="menuNameInput" placeholder="예: 회원 관리, 시스템 설정" required>
+          </div>
+
+          <!-- 이동 URL -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">이동 URL 링크 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="menu_url" id="menuUrlInput" placeholder="예: /users, /activations, /system" value="#" required>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <!-- 메뉴 아이콘 -->
+            <div class="col-sm-7">
+              <label class="form-label small fw-semibold text-secondary">부트스트랩 아이콘 클래스</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light" id="iconPreviewBox"><i class="bi bi-circle"></i></span>
+                <input type="text" class="form-control" name="menu_icon" id="menuIconInput" placeholder="예: bi-people-fill" value="bi-circle" oninput="updateIconPreview(this.value)">
+              </div>
+            </div>
+
+            <!-- 정렬 순서 -->
+            <div class="col-sm-5">
+              <label class="form-label small fw-semibold text-secondary">정렬 순서</label>
+              <input type="number" class="form-control form-control-sm" name="sort_order" id="menuSortInput" value="1" min="0">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <!-- 메뉴 계층 Depth -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">메뉴 계층</label>
+              <select class="form-select form-select-sm" name="menu_depth" id="menuDepthSelect">
+                <option value="1">대메뉴</option>
+                <option value="2">중메뉴</option>
+                <option value="3">소메뉴</option>
+              </select>
+            </div>
+
+            <!-- 사용 여부 (USE / HIDE) -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">상태 (USE / HIDE)</label>
+              <select class="form-select form-select-sm" name="use_yn" id="menuUseSelect">
+                <option value="Y">USE (사이드바 노출)</option>
+                <option value="N">HIDE (사이드바 숨김)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">취소</button>
+          <button type="submit" class="btn btn-sm btn-primary px-3" id="btnSaveMenu">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 2: 공통 설정 등록 / 수정 (sys_config)              -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalConfig" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="formConfig">
+        <input type="hidden" name="config_id" id="configIdInput">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold fs-6" id="modalConfigTitle">
+            <i class="bi bi-sliders text-success me-1"></i> 설정 및 코드 등록
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 그룹 코드 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">그룹 코드 (group_code) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm font-monospace text-uppercase" name="group_code" id="configGroupInput" list="groupDatalist" placeholder="예: UPLOAD_META, SERVER_ENV, COMMON_CODE" required>
+            <datalist id="groupDatalist">
+              <option value="UPLOAD_META">
+              <option value="SERVER_ENV">
+              <option value="COMMON_CODE">
+              <option value="SECURITY">
+            </datalist>
+          </div>
+
+          <!-- 항목 코드 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">항목 코드 (item_code) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm font-monospace text-uppercase" name="item_code" id="configItemInput" placeholder="예: MEMBER_EXCEL, OPEN_EXCEL, PUBLIC_IP" required>
+            <div class="form-text small">동일 그룹 내에서 고유(Unique)해야 합니다.</div>
+          </div>
+
+          <!-- 항목 명칭 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">항목 명칭 (item_name) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="item_name" id="configNameInput" placeholder="예: 회원정보 최근 업로드 일시" required>
+          </div>
+
+          <!-- 설정 값 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">설정 값 (item_value)</label>
+            <textarea class="form-control form-control-sm font-monospace" name="item_value" id="configValueInput" rows="3" placeholder="저장할 설정 값 또는 JSON/일시 문자열"></textarea>
+          </div>
+
+          <!-- 설명 -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">설명 (description)</label>
+            <input type="text" class="form-control form-control-sm" name="description" id="configDescInput" placeholder="설정의 용도 및 상세 설명">
+          </div>
+
+          <div class="row g-2 mb-2">
+            <!-- 정렬 순서 -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">정렬 순서</label>
+              <input type="number" class="form-control form-control-sm" name="sort_order" id="configSortInput" value="0" min="0">
+            </div>
+
+            <!-- 사용 여부 -->
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-secondary">사용 여부</label>
+              <select class="form-select form-select-sm" name="use_yn" id="configUseSelect">
+                <option value="Y">USE (사용)</option>
+                <option value="N">HIDE (숨김)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">취소</button>
+          <button type="submit" class="btn btn-sm btn-success px-3" id="btnSaveConfig">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 3: 빠른 값 수정 모달                               -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalQuickEdit" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold fs-6">
+          <i class="bi bi-pencil-square text-primary me-1"></i> 설정 값(Value) 빠른 수정
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="quickEditId">
+        <div class="mb-2">
+          <span class="badge bg-secondary-subtle text-dark border font-monospace" id="quickEditGroup"></span>
+          <strong class="font-monospace ms-1 text-primary" id="quickEditItem"></strong>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-secondary">변경할 값</label>
+          <textarea class="form-control font-monospace" id="quickEditValue" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary px-3" onclick="submitQuickEdit()">적용하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Frontend JavaScript -->
+<script>
+  // URL Hash에 따른 부드러운 스크롤 자동 이동 및 동적 이벤트 바인딩
+  window.addEventListener('DOMContentLoaded', () => {
+    const hash = window.location.hash;
+    if (hash) {
+      const targetId = (hash === '#configs' || hash === '#tab-configs' || hash === '#section-configs')
+        ? 'section-configs'
+        : (hash === '#menus' || hash === '#tab-menus' || hash === '#section-menus')
+        ? 'section-menus'
+        : hash.replace('#', '');
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        setTimeout(() => {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+      }
+    }
+
+    // 메뉴 수정 버튼 이벤트
+    document.querySelectorAll('.btn-edit-menu').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const menu = JSON.parse(decodeURIComponent(btn.dataset.menu));
+          editMenu(menu);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    });
+
+    // 설정 상세 수정 버튼 이벤트
+    document.querySelectorAll('.btn-edit-config').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const config = JSON.parse(decodeURIComponent(btn.dataset.config));
+          editConfig(config);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    });
+
+    // 설정 값 빠른 수정 버튼 이벤트
+    document.querySelectorAll('.btn-quick-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const { id, group, item, value } = btn.dataset;
+        quickEditValue(parseInt(id, 10), group, item, value);
+      });
+    });
+
+    // 단일 토글 버튼 이벤트 리스너 추가 바인딩 (onclick 보조 및 완전 호환)
+    document.querySelectorAll('.btn-menu-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (btn.disabled) return;
+        toggleMenuStatus(btn);
+      });
+    });
+  });
+
+  // ==========================================
+  // 메뉴 상태 원클릭 단일 토글 (USE <-> HIDE)
+  // ==========================================
+  async function toggleMenuStatus(btnOrId, targetStatusParam, menuNameParam) {
+    let btn = null;
+    let menuId;
+    let targetStatus;
+    let menuName;
+
+    if (btnOrId instanceof HTMLElement) {
+      btn = btnOrId;
+      menuId = btn.dataset.id;
+      targetStatus = btn.dataset.status || targetStatusParam;
+      menuName = btn.dataset.name || menuNameParam || '';
+    } else {
+      menuId = btnOrId;
+      targetStatus = targetStatusParam;
+      menuName = menuNameParam || '';
+      btn = document.querySelector(`.btn-menu-toggle[data-id="${menuId}"]`);
+    }
+
+    if (!menuId) return;
+    if (btn && btn.disabled) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>변경중...';
+    }
+
+    const isTargetHide = targetStatus === 'N';
+
+    try {
+      const res = await fetch(`/api/system/menus/${menuId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ use_yn: targetStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(`[${menuName}] 메뉴가 [${isTargetHide ? 'HIDE (사이드바 숨김)' : 'USE (사이드바 노출)'}] 상태로 변경되었습니다.`);
+        setTimeout(() => window.location.reload(), 200);
+      } else {
+        alert('상태 변경 실패: ' + (data.message || '알 수 없는 오류'));
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = isTargetHide 
+            ? '<i class="bi bi-check-circle-fill me-1"></i>USE' 
+            : '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
+        }
+      }
+    } catch (err) {
+      alert('통신 에러가 발생했습니다: ' + err.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = isTargetHide 
+          ? '<i class="bi bi-check-circle-fill me-1"></i>USE' 
+          : '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
+      }
+    }
+  }
+  window.toggleMenuStatus = toggleMenuStatus;
+
+  // 알림 메시지 헬퍼
+  function showAlert(msg, type = 'success') {
+    const box = document.getElementById('systemAlertBox');
+    box.className = `alert alert-${type} py-2 px-3 small mb-3`;
+    box.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} me-1"></i> ${msg}`;
+    box.classList.remove('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      box.classList.add('d-none');
+    }, 4000);
+  }
+
+  // 아이콘 미리보기 갱신
+  function updateIconPreview(cls) {
+    const box = document.getElementById('iconPreviewBox');
+    box.innerHTML = `<i class="bi ${cls || 'bi-circle'} text-primary"></i>`;
+  }
+
+  // 상위 메뉴 변경 시 계층(Depth) 자동 설정
+  function autoSetDepth(parentId) {
+    const depthSelect = document.getElementById('menuDepthSelect');
+    if (!parentId) {
+      depthSelect.value = '1';
+    } else {
+      const parentOption = document.querySelector(`#menuParentSelect option[value="${parentId}"]`);
+      const targetDepth = parentOption ? parentOption.getAttribute('data-depth') : '2';
+      depthSelect.value = targetDepth || '2';
+    }
+  }
+
+  // ==========================================
+  // 메뉴 모달 관리
+  // ==========================================
+  function openMenuModal() {
+    document.getElementById('formMenu').reset();
+    document.getElementById('menuIdInput').value = '';
+    document.getElementById('modalMenuTitle').innerHTML = '<i class="bi bi-diagram-3 text-primary me-1"></i> 신규 메뉴 등록';
+    document.getElementById('menuDepthSelect').value = '1';
+    document.getElementById('menuUseSelect').value = 'Y';
+    updateIconPreview('bi-circle');
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMenu')) : null;
+    if (modal) modal.show();
+  }
+
+  function editMenu(m) {
+    document.getElementById('menuIdInput').value = m.menu_id;
+    document.getElementById('modalMenuTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-1"></i> 메뉴 수정: ' + m.menu_name;
+    document.getElementById('menuParentSelect').value = m.parent_id || '';
+    document.getElementById('menuNameInput').value = m.menu_name || '';
+    document.getElementById('menuUrlInput').value = m.menu_url || '#';
+    document.getElementById('menuIconInput').value = m.menu_icon || 'bi-circle';
+    document.getElementById('menuSortInput').value = m.sort_order || 0;
+    document.getElementById('menuDepthSelect').value = m.menu_depth || 1;
+    document.getElementById('menuUseSelect').value = m.use_yn || 'Y';
+    updateIconPreview(m.menu_icon);
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMenu')) : null;
+    if (modal) modal.show();
+  }
+
+  document.getElementById('formMenu').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const menuId = document.getElementById('menuIdInput').value;
+    const isEdit = !!menuId;
+
+    const payload = {
+      parent_id: document.getElementById('menuParentSelect').value || null,
+      menu_name: document.getElementById('menuNameInput').value.trim(),
+      menu_url: document.getElementById('menuUrlInput').value.trim(),
+      menu_icon: document.getElementById('menuIconInput').value.trim(),
+      menu_depth: parseInt(document.getElementById('menuDepthSelect').value, 10),
+      sort_order: parseInt(document.getElementById('menuSortInput').value, 10) || 0,
+      use_yn: document.getElementById('menuUseSelect').value
+    };
+
+    const url = isEdit ? `/api/system/menus/${menuId}` : '/api/system/menus';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        bsModalMenu.hide();
+        showAlert(data.message);
+        setTimeout(() => location.reload(), 800);
+      } else {
+        alert('오류: ' + data.message);
+      }
+    } catch (err) {
+      alert('요청 중 통신 에러 발생: ' + err.message);
+    }
+  });
+
+  async function deleteMenu(menuId, menuName) {
+    if (!confirm(`[${menuName}] 메뉴를 삭제하시겠습니까?`)) return;
+
+    try {
+      const res = await fetch(`/api/system/menus/${menuId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(data.message);
+        setTimeout(() => location.reload(), 800);
+      } else {
+        alert('삭제 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('삭제 중 통신 에러 발생: ' + err.message);
+    }
+  }
+
+  // ==========================================
+  // 공통 설정 / 코드 모달 관리
+  // ==========================================
+  function openConfigModal() {
+    document.getElementById('formConfig').reset();
+    document.getElementById('configIdInput').value = '';
+    document.getElementById('modalConfigTitle').innerHTML = '<i class="bi bi-sliders text-success me-1"></i> 신규 설정/코드 등록';
+    document.getElementById('configUseSelect').value = 'Y';
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfig')) : null;
+    if (modal) modal.show();
+  }
+
+  function editConfig(c) {
+    document.getElementById('configIdInput').value = c.id;
+    document.getElementById('modalConfigTitle').innerHTML = '<i class="bi bi-pencil-square text-success me-1"></i> 설정 수정: ' + c.item_code;
+    document.getElementById('configGroupInput').value = c.group_code || '';
+    document.getElementById('configItemInput').value = c.item_code || '';
+    document.getElementById('configNameInput').value = c.item_name || '';
+    document.getElementById('configValueInput').value = c.item_value || '';
+    document.getElementById('configDescInput').value = c.description || '';
+    document.getElementById('configSortInput').value = c.sort_order || 0;
+    document.getElementById('configUseSelect').value = c.use_yn || 'Y';
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfig')) : null;
+    if (modal) modal.show();
+  }
+
+  document.getElementById('formConfig').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const configId = document.getElementById('configIdInput').value;
+    const isEdit = !!configId;
+
+    const payload = {
+      group_code: document.getElementById('configGroupInput').value.trim().toUpperCase(),
+      item_code: document.getElementById('configItemInput').value.trim().toUpperCase(),
+      item_name: document.getElementById('configNameInput').value.trim(),
+      item_value: document.getElementById('configValueInput').value,
+      description: document.getElementById('configDescInput').value.trim(),
+      sort_order: parseInt(document.getElementById('configSortInput').value, 10) || 0,
+      use_yn: document.getElementById('configUseSelect').value
+    };
+
+    const url = isEdit ? `/api/system/configs/${configId}` : '/api/system/configs';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        bsModalConfig.hide();
+        showAlert(data.message);
+        setTimeout(() => {
+          location.href = '/system#section-configs';
+        }, 800);
+      } else {
+        alert('오류: ' + data.message);
+      }
+    } catch (err) {
+      alert('요청 중 통신 에러 발생: ' + err.message);
+    }
+  });
+
+  async function deleteConfig(configId, itemCode) {
+    if (!confirm(`[${itemCode}] 설정 항목을 삭제하시겠습니까?`)) return;
+
+    try {
+      const res = await fetch(`/api/system/configs/${configId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showAlert(data.message);
+        setTimeout(() => {
+          location.href = '/system#section-configs';
+        }, 800);
+      } else {
+        alert('삭제 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('삭제 중 통신 에러 발생: ' + err.message);
+    }
+  }
+
+  // 그룹 필터 변경
+  function filterConfigGroup(group) {
+    const url = group ? `/system?group=${encodeURIComponent(group)}#section-configs` : '/system#section-configs';
+    location.href = url;
+  }
+
+  // ==========================================
+  // 빠른 값 수정 모달
+  // ==========================================
+  let currentQuickEditConfig = null;
+
+  async function quickEditValue(id, group, item, val) {
+    document.getElementById('quickEditId').value = id;
+    document.getElementById('quickEditGroup').textContent = group;
+    document.getElementById('quickEditItem').textContent = item;
+    document.getElementById('quickEditValue').value = val;
+
+    // 해당 항목의 전체 정보 로드
+    try {
+      const res = await fetch(`/api/system/configs?group=${group}`);
+      const data = await res.json();
+      if (data.success) {
+        currentQuickEditConfig = data.configs.find(c => c.id === id);
+      }
+    } catch (e) {}
+
+    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(document.getElementById('modalQuickEdit')) : null;
+    if (modal) modal.show();
+  }
+
+  async function submitQuickEdit() {
+    const id = document.getElementById('quickEditId').value;
+    const newVal = document.getElementById('quickEditValue').value;
+
+    if (!currentQuickEditConfig) {
+      alert('설정 정보를 불러오지 못했습니다.');
+      return;
+    }
+
+    const payload = {
+      ...currentQuickEditConfig,
+      item_value: newVal
+    };
+
+    try {
+      const res = await fetch(`/api/system/configs/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getInstance(document.getElementById('modalQuickEdit')) : null;
+        if (modal) modal.hide();
+        showAlert('설정 값이 성공적으로 변경되었습니다.');
+        setTimeout(() => location.reload(), 800);
+      } else {
+        alert('수정 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('통신 에러: ' + err.message);
+    }
+  }
+
+  // ==========================================
+  // 공인 IP 감지 및 갱신 버튼 이벤트
+  // ==========================================
+  document.getElementById('btnDetectIp').addEventListener('click', async () => {
+    const btn = document.getElementById('btnDetectIp');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> IP 감지 중...';
+
+    try {
+      const res = await fetch('/api/system/detect-ip', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('summaryPublicIp').textContent = data.ip;
+        showAlert(data.message);
+      } else {
+        alert('IP 감지 실패: ' + data.message);
+      }
+    } catch (err) {
+      alert('IP 감지 요청 실패: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-broadcast"></i> <span>공인 IP 자동 감지/갱신</span>';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

@@ -5,42 +5,172 @@
       메인 메뉴
     </div>
     <ul class="nav flex-column gap-1">
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'dashboard' ? 'active bg-primary text-white' : 'text-dark' %>" href="/dashboard">
-          <i class="bi bi-speedometer2"></i>
-          <span>대시보드</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'stats' ? 'active bg-primary text-white' : 'text-dark' %>" href="/stats">
-          <i class="bi bi-bar-chart-line"></i>
-          <span>통계 분석</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'data' ? 'active bg-primary text-white' : 'text-dark' %>" href="/data">
-          <i class="bi bi-table"></i>
-          <span>데이터 조회</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'users' ? 'active bg-primary text-white' : 'text-dark' %>" href="/users">
-          <i class="bi bi-people-fill"></i>
-          <span>회원 관리</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/activations">
-          <i class="bi bi-phone-fill"></i>
-          <span>개통 이력</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'user-activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/user-activations">
-          <i class="bi bi-person-lines-fill"></i>
-          <span>회원 개통 이력</span>
-        </a>
-      </li>
+      <% if (typeof sidebarTree !== 'undefined' && sidebarTree && sidebarTree.length > 0) { %>
+        <% sidebarTree.forEach(root => { %>
+          <% const hasChildren = root.children && root.children.length > 0; %>
+          <% const isRootActive = (typeof activeMenu !== 'undefined' && (root.menu_url === '/' + activeMenu)); %>
+          <% const isChildActive = hasChildren && root.children.some(c => (typeof activeMenu !== 'undefined' && (
+               c.menu_url === '/' + activeMenu ||
+               (activeMenu === 'system-menus' && c.menu_url === '/system/menus') ||
+               (activeMenu === 'system-configs' && c.menu_url === '/system/configs') ||
+               (activeMenu === 'notification-sms' && c.menu_url === '/notifications/sms') ||
+               (activeMenu === 'notification-alimtalk' && c.menu_url === '/notifications/alimtalk')
+             ))); %>
+          <% const isGroupActive = isRootActive || isChildActive; %>
+
+          <% if (hasChildren) { %>
+            <!-- 상위-하위 계층형 드롭다운/토글 메뉴 (아코디언) -->
+            <li class="nav-item">
+              <a class="nav-link rounded-3 d-flex align-items-center gap-2 text-dark <%= isGroupActive ? 'fw-bold bg-light' : '' %> <%= isGroupActive ? '' : 'collapsed' %>"
+                 data-bs-toggle="collapse"
+                 href="#collapse-menu-<%= root.menu_id %>"
+                 role="button"
+                 aria-expanded="<%= isGroupActive ? 'true' : 'false' %>">
+                <i class="bi <%= root.menu_icon || 'bi-folder-fill' %>"></i>
+                <span><%= root.menu_name %></span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary"></i>
+              </a>
+              <div class="collapse <%= isGroupActive ? 'show' : '' %>" id="collapse-menu-<%= root.menu_id %>">
+                <div class="sidebar-submenu ps-2 py-1 my-1">
+                  <ul class="nav flex-column gap-1">
+                    <% root.children.forEach(sub => { %>
+                      <% const hasSubChildren = sub.children && sub.children.length > 0; %>
+                      <% const isSubActive = (typeof activeMenu !== 'undefined' && (
+                           sub.menu_url === '/' + activeMenu ||
+                           (activeMenu === 'system-menus' && sub.menu_url === '/system/menus') ||
+                           (activeMenu === 'system-configs' && sub.menu_url === '/system/configs') ||
+                           (activeMenu === 'notification-sms' && sub.menu_url === '/notifications/sms') ||
+                           (activeMenu === 'notification-alimtalk' && sub.menu_url === '/notifications/alimtalk')
+                         )); %>
+                      <% const isSubGroupActive = isSubActive || (hasSubChildren && sub.children.some(leaf => typeof activeMenu !== 'undefined' && (leaf.menu_url === '/' + activeMenu))); %>
+                      
+                      <% if (hasSubChildren) { %>
+                        <!-- 소메뉴를 가진 중메뉴 (2차 아코디언 토글) -->
+                        <li class="nav-item">
+                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubGroupActive ? 'fw-semibold text-primary' : 'text-secondary' %> <%= isSubGroupActive ? '' : 'collapsed' %>"
+                             data-bs-toggle="collapse"
+                             href="#collapse-sub-<%= sub.menu_id %>"
+                             role="button"
+                             aria-expanded="<%= isSubGroupActive ? 'true' : 'false' %>">
+                            <i class="bi <%= sub.menu_icon || 'bi-folder2' %>" style="font-size: 0.85rem;"></i>
+                            <span><%= sub.menu_name %></span>
+                            <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary" style="font-size: 0.7rem;"></i>
+                          </a>
+                          <div class="collapse <%= isSubGroupActive ? 'show' : '' %>" id="collapse-sub-<%= sub.menu_id %>">
+                            <div class="sidebar-submenu ps-3 py-1 my-1 border-start ms-2">
+                              <ul class="nav flex-column gap-1">
+                                <% sub.children.forEach(leaf => { %>
+                                  <% const isLeafActive = (typeof activeMenu !== 'undefined' && (leaf.menu_url.includes(activeMenu) || leaf.menu_url === '/' + activeMenu)); %>
+                                  <li class="nav-item">
+                                    <a class="nav-link py-1 d-flex align-items-center gap-2 <%= isLeafActive ? 'active fw-bold text-primary' : 'text-muted' %>" href="<%= leaf.menu_url %>" style="font-size: 0.82rem;">
+                                      <i class="bi <%= leaf.menu_icon || 'bi-dash' %>" style="font-size: 0.75rem;"></i>
+                                      <span><%= leaf.menu_name %></span>
+                                    </a>
+                                  </li>
+                                <% }); %>
+                              </ul>
+                            </div>
+                          </div>
+                        </li>
+                      <% } else { %>
+                        <!-- 단일 중메뉴 링크 -->
+                        <li class="nav-item">
+                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubActive ? 'active' : '' %>" href="<%= sub.menu_url %>">
+                            <i class="bi <%= sub.menu_icon || 'bi-dot' %>" style="font-size: 0.8rem;"></i>
+                            <span><%= sub.menu_name %></span>
+                          </a>
+                        </li>
+                      <% } %>
+                    <% }); %>
+                  </ul>
+                </div>
+              </div>
+            </li>
+          <% } else { %>
+            <!-- 단일 메뉴 링크 -->
+            <li class="nav-item">
+              <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= isRootActive ? 'active bg-primary text-white' : 'text-dark' %>" href="<%= root.menu_url %>">
+                <i class="bi <%= root.menu_icon || 'bi-circle' %>"></i>
+                <span><%= root.menu_name %></span>
+              </a>
+            </li>
+          <% } %>
+        <% }); %>
+      <% } else { %>
+        <!-- 폴백 메뉴 (DB 미연결 등) -->
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'dashboard' ? 'active bg-primary text-white' : 'text-dark' %>" href="/dashboard">
+            <i class="bi bi-speedometer2"></i>
+            <span>대시보드</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'stats' ? 'active bg-primary text-white' : 'text-dark' %>" href="/stats">
+            <i class="bi bi-bar-chart-line"></i>
+            <span>통계 분석</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'data' ? 'active bg-primary text-white' : 'text-dark' %>" href="/data">
+            <i class="bi bi-table"></i>
+            <span>데이터 조회</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'users' ? 'active bg-primary text-white' : 'text-dark' %>" href="/users">
+            <i class="bi bi-people-fill"></i>
+            <span>회원 관리</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/activations">
+            <i class="bi bi-phone-fill"></i>
+            <span>개통 이력</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= activeMenu === 'user-activations' ? 'active bg-primary text-white' : 'text-dark' %>" href="/user-activations">
+            <i class="bi bi-person-lines-fill"></i>
+            <span>회원 개통 이력</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 <%= (activeMenu === 'system-menus' || activeMenu === 'system-configs') ? 'active bg-primary text-white' : 'text-dark' %>" href="/system/menus">
+            <i class="bi bi-gear-fill"></i>
+            <span>시스템 관리</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <% const isNotiActive = (activeMenu === 'notification-sms' || activeMenu === 'notification-alimtalk'); %>
+          <a class="nav-link rounded-3 d-flex align-items-center gap-2 text-dark <%= isNotiActive ? 'fw-bold bg-light' : '' %> <%= isNotiActive ? '' : 'collapsed' %>"
+             data-bs-toggle="collapse"
+             href="#collapse-menu-fallback-noti"
+             role="button"
+             aria-expanded="<%= isNotiActive ? 'true' : 'false' %>">
+            <i class="bi bi-bell-fill"></i>
+            <span>알림 관리</span>
+            <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary"></i>
+          </a>
+          <div class="collapse <%= isNotiActive ? 'show' : '' %>" id="collapse-menu-fallback-noti">
+            <div class="sidebar-submenu ps-2 py-1 my-1">
+              <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2 <%= activeMenu === 'notification-sms' ? 'active' : '' %>" href="/notifications/sms">
+                    <i class="bi bi-chat-dots-fill"></i>
+                    <span>문자 관리</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2 <%= activeMenu === 'notification-alimtalk' ? 'active' : '' %>" href="/notifications/alimtalk">
+                    <i class="bi bi-chat-quote-fill"></i>
+                    <span>알림톡 관리</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </li>
+      <% } %>
     </ul>
 
     <hr class="my-4">

@@ -89,7 +89,47 @@ async function initSchema(dbPool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='업로드 에러 및 보안 로그 테이블';
   `);
 
-  // 4. 회원-개통이력 조인 최적화 복합 인덱스 (birth_dt + phone/phone_num)
+  // 4. sys_menu 테이블 생성 (대·중·소메뉴 계층 구조 관리용)
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS sys_menu (
+      menu_id INT NOT NULL AUTO_INCREMENT COMMENT '메뉴 고유 ID (PK)',
+      parent_id INT DEFAULT NULL COMMENT '상위 메뉴 ID (대메뉴는 NULL)',
+      menu_name VARCHAR(100) NOT NULL COMMENT '메뉴 이름',
+      menu_url VARCHAR(255) NOT NULL DEFAULT '#' COMMENT '이동 URL',
+      menu_icon VARCHAR(50) DEFAULT 'bi-circle' COMMENT '부트스트랩 아이콘 클래스',
+      menu_depth INT NOT NULL DEFAULT 1 COMMENT '메뉴 계층 (1: 대메뉴, 2: 중메뉴, 3: 소메뉴)',
+      sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
+      use_yn CHAR(1) NOT NULL DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 일시',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 일시',
+      PRIMARY KEY (menu_id),
+      KEY idx_parent_id (parent_id),
+      KEY idx_sort_order (sort_order),
+      KEY idx_use_yn (use_yn)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='대/중/소메뉴 계층 구조 관리 테이블';
+  `);
+
+  // 5. sys_config 테이블 생성 (공통 설정, 코드, 최근 업로드 일시, 공인 IP 관리용)
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS sys_config (
+      id INT NOT NULL AUTO_INCREMENT COMMENT '설정 고유 ID (PK)',
+      group_code VARCHAR(50) NOT NULL COMMENT '설정 그룹 코드 (UPLOAD_META, SERVER_ENV 등)',
+      item_code VARCHAR(50) NOT NULL COMMENT '설정 항목 코드 (MEMBER_EXCEL, OPEN_EXCEL, PUBLIC_IP 등)',
+      item_name VARCHAR(100) NOT NULL COMMENT '설정 항목 명칭',
+      item_value TEXT DEFAULT NULL COMMENT '설정 값',
+      description VARCHAR(255) DEFAULT NULL COMMENT '설명',
+      sort_order INT NOT NULL DEFAULT 0 COMMENT '그룹 내 정렬 순서',
+      use_yn CHAR(1) NOT NULL DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 일시',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 일시',
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_group_item (group_code, item_code),
+      KEY idx_group_code (group_code),
+      KEY idx_use_yn (use_yn)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 설정 및 코드 관리 테이블';
+  `);
+
+  // 6. 회원-개통이력 조인 최적화 복합 인덱스 (birth_dt + phone/phone_num)
   try {
     await dbPool.query('CREATE INDEX idx_user_join ON app_user (birth_dt, phone)');
   } catch (e) {

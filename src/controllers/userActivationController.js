@@ -29,27 +29,23 @@ const userActivationController = {
       // 2. 상단 요약 통계 조회
       const stats = await UserActivationModel.getSummaryStats();
 
-      // 3. 데이터 가공 (고객명 마스킹, 금액 파싱, 최종할부원금 계산)
+      // 3. 데이터 가공 (고객명 마스킹 해제 -> 원본 그대로 노출, 엑셀 원본 할부원금 파싱)
       const processedItems = result.items.map(item => {
         const rawName = item.cust_nm || item.user_nm || '';
-        const maskedName = maskCustomerName(rawName);
         const factoryPriceNum = parseMoney(item.factory_price);
         const commonSubsidyNum = parseMoney(item.common_subsidy);
         const addSubsidyNum = parseMoney(item.add_subsidy);
-        const finalPrincipalNum = calculateFinalPrincipal(
-          item.factory_price,
-          item.common_subsidy,
-          item.add_subsidy
-        );
+        const installmentPrincipalNum = parseMoney(item.installment_principal);
 
         return {
           ...item,
           raw_name: rawName,
-          masked_name: maskedName,
+          masked_name: rawName, // 마스킹 해제: 원본 이름 그대로 노출
           factory_price_num: factoryPriceNum,
           common_subsidy_num: commonSubsidyNum,
           add_subsidy_num: addSubsidyNum,
-          final_principal_num: finalPrincipalNum
+          installment_principal_num: installmentPrincipalNum,
+          final_principal_num: installmentPrincipalNum // 엑셀의 실제 할부원금으로 직접 매핑
         };
       });
 

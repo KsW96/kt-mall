@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const { initDb } = require('./config/db');
 const { formatDateTime, formatDate } = require('./utils/formatDate');
+const SystemModel = require('./models/systemModel');
 const routes = require('./routes');
 
 const app = express();
@@ -26,6 +27,31 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Dynamic Sidebar Menu Tree Middleware (계층형 드롭다운/토글 메뉴)
+app.use(async (req, res, next) => {
+  try {
+    const allMenus = await SystemModel.getAllMenus();
+    // use_yn === 'Y' (USE 상태)인 메뉴만 사이드바에 표출
+    const activeMenus = allMenus.filter(m => m.use_yn === 'Y');
+
+    // 1단계: 대메뉴 (parent_id 가 null 이거나 0인 메뉴)
+    const tree = activeMenus.filter(m => !m.parent_id);
+
+    // 2단계: 중메뉴 및 소메뉴 계층 매핑
+    tree.forEach(root => {
+      root.children = activeMenus.filter(c => c.parent_id === root.menu_id);
+      root.children.forEach(sub => {
+        sub.children = activeMenus.filter(leaf => leaf.parent_id === sub.menu_id);
+      });
+    });
+
+    res.locals.sidebarTree = tree;
+  } catch (err) {
+    res.locals.sidebarTree = [];
+  }
+  next();
+});
 
 // Routes
 app.use('/', routes);

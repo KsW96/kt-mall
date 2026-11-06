@@ -29,10 +29,13 @@ const UserActivationModel = {
           } else if (searchType === 'plan_nm') {
             whereClauses.push('a.plan_nm LIKE ?');
             params.push(pattern);
+          } else if (searchType === 'join_category') {
+            whereClauses.push('a.join_category LIKE ?');
+            params.push(pattern);
           } else {
             // all
-            whereClauses.push('(u.nm LIKE ? OR a.cust_nm LIKE ? OR a.phone_num LIKE ? OR a.model_nm LIKE ? OR a.plan_nm LIKE ?)');
-            params.push(pattern, pattern, pattern, pattern, pattern);
+            whereClauses.push('(u.nm LIKE ? OR a.cust_nm LIKE ? OR a.phone_num LIKE ? OR a.model_nm LIKE ? OR a.plan_nm LIKE ? OR a.join_category LIKE ? OR a.installment_period LIKE ?)');
+            params.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern);
           }
         }
 
@@ -74,9 +77,12 @@ const UserActivationModel = {
             a.birth_dt,
             a.phone_num,
             a.opening_dt,
+            a.join_category,
             a.model_nm,
             a.color,
             a.plan_nm,
+            a.installment_period,
+            a.installment_principal,
             a.agreement_opt,
             a.factory_price,
             a.common_subsidy,
@@ -118,11 +124,36 @@ const UserActivationModel = {
   },
 
   /**
-   * 통계 지표 산출 (총 매칭 건수, 고유 회원 수, 총 지원금, 총 최종할부원금)
+   * 통계 지표 산출 (총 매칭 건수, 고유 회원 수, 총 지원금, 총 최종할부원금, 최신 업로드 일시)
    */
   async getSummaryStats() {
+    let lastUploadDt = '-';
+    let memberLastUpload = '-';
+
     if (db.getDbStatus().connected) {
       try {
+        // 1. sys_config 에서 OPEN_EXCEL 및 MEMBER_EXCEL 최근 업로드 일시 확인
+        try {
+          const [cfgRows] = await db.query("SELECT item_code, item_value FROM sys_config WHERE group_code = 'UPLOAD_META' AND item_code IN ('OPEN_EXCEL', 'MEMBER_EXCEL')");
+          for (const row of cfgRows) {
+            if (row.item_code === 'OPEN_EXCEL' && row.item_value && row.item_value !== '-') {
+              lastUploadDt = row.item_value;
+            }
+            if (row.item_code === 'MEMBER_EXCEL' && row.item_value && row.item_value !== '-') {
+              memberLastUpload = row.item_value;
+            }
+          }
+        } catch (e) {}
+
+        if (lastUploadDt === '-') {
+          try {
+            const [actRows] = await db.query("SELECT MAX(DATE_FORMAT(created_dt, '%Y-%m-%d %H:%i:%s')) as maxDt FROM activation_log");
+            if (actRows && actRows[0] && actRows[0].maxDt) {
+              lastUploadDt = actRows[0].maxDt;
+            }
+          } catch (e) {}
+        }
+
         // 1. 총 매칭 건수 및 고유 회원 수 집계
         const countSql = `
           SELECT 
@@ -140,11 +171,11 @@ const UserActivationModel = {
         let totalSubsidies = 0;
         let totalPrincipal = 0;
 
-        // 2. 금액 계산 (매칭 건수가 1건 이상일 때)
+        // 2. 금액 계산 (매칭 건수가 1건 이상일 때 - 엑셀의 실제 할부원금 합산)
         if (totalMatched > 0) {
           const moneySql = `
             SELECT 
-              a.factory_price,
+              a.installment_principal,
               a.common_subsidy,
               a.add_subsidy
             FROM app_user u
@@ -157,10 +188,10 @@ const UserActivationModel = {
           for (const row of rows) {
             const common = parseMoney(row.common_subsidy);
             const add = parseMoney(row.add_subsidy);
-            const factory = parseMoney(row.factory_price);
+            const principal = parseMoney(row.installment_principal);
 
             totalSubsidies += (common + add);
-            totalPrincipal += (factory - common - add);
+            totalPrincipal += principal;
           }
         }
 
@@ -168,18 +199,33 @@ const UserActivationModel = {
           totalMatched,
           uniqueUsers,
           totalSubsidies,
-          totalPrincipal
+          totalPrincipal,
+          lastUploadDt,
+          openLastUpload: lastUploadDt,
+          memberLastUpload
         };
       } catch (err) {
         console.error('UserActivationModel.getSummaryStats Error:', err.message);
       }
     }
 
+    try {
+      const SystemModel = require('./systemModel');
+      const allConfigs = await SystemModel.getAllConfigs({});
+      const openCfg = allConfigs.find(c => c.group_code === 'UPLOAD_META' && c.item_code === 'OPEN_EXCEL');
+      const memberCfg = allConfigs.find(c => c.group_code === 'UPLOAD_META' && c.item_code === 'MEMBER_EXCEL');
+      if (openCfg && openCfg.item_value) lastUploadDt = openCfg.item_value;
+      if (memberCfg && memberCfg.item_value) memberLastUpload = memberCfg.item_value;
+    } catch (e) {}
+
     return {
       totalMatched: 0,
       uniqueUsers: 0,
       totalSubsidies: 0,
-      totalPrincipal: 0
+      totalPrincipal: 0,
+      lastUploadDt,
+      openLastUpload: lastUploadDt,
+      memberLastUpload
     };
   }
 };
