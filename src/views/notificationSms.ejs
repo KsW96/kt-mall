@@ -3,669 +3,1244 @@
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
   <!-- Page Header -->
-  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
     <div>
       <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
         <h1 class="h3 fw-bold mb-0 d-flex align-items-center gap-2">
-          <i class="bi bi-chat-dots-fill text-primary"></i>
-          <span>문자 관리 (SMS / LMS)</span>
+          <i class="bi <%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_icon) ? currentMenu.menu_icon : 'bi-chat-dots-fill' %> text-primary"></i>
+          <span><%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_name) ? currentMenu.menu_name : '문자 관리' %></span>
         </h1>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1">
-          <i class="bi bi-gear-wide-connected me-1"></i>발송 규칙 엔진 연동
-        </span>
+        <% if (aligoConfig && aligoConfig.apiKey && aligoConfig.sender) { %>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" data-bs-toggle="tooltip" title="Aligo SMS API 연동 정상 구동 중">
+            <i class="bi bi-broadcast me-1"></i>Aligo 연동 활성 <%= aligoConfig.testmodeYn === 'Y' ? '(테스트모드: 건수 미차감)' : '(운영 발송 모드)' %>
+          </span>
+        <% } else { %>
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1" data-bs-toggle="tooltip" title="상단 [Aligo 연동 설정] 버튼을 클릭해 API 키와 발신번호를 등록하세요.">
+            <i class="bi bi-key-fill me-1"></i>Aligo API 키 미등록 (설정 필요)
+          </span>
+        <% } %>
       </div>
-      <p class="text-muted small mb-0">고객 개통일자 기준 맞춤 발송 조건, 템플릿 및 정기 발송 주기를 설정하고 관리합니다.</p>
+      <p class="text-muted small mb-0">Aligo 공식 규격 기반 실시간 문자 발송 및 고객 개통 조건별 자동 스케줄 발송을 관리합니다.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-      <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 shadow-sm" onclick="openTestSendModal()">
-        <i class="bi bi-send-fill"></i>
-        <span>테스트 발송</span>
+      <!-- Aligo API Config Button -->
+      <button type="button" class="btn btn-sm btn-outline-dark d-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAligoConfig">
+        <i class="bi bi-gear-fill text-secondary"></i>
+        <span>Aligo 연동 설정</span>
       </button>
-      <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm" onclick="openTemplateModal()">
-        <i class="bi bi-plus-circle-fill"></i>
-        <span>신규 템플릿 등록</span>
+      <button type="button" class="btn btn-sm btn-light border shadow-xs" onclick="checkAligoRemain()">
+        <i class="bi bi-wallet2 text-primary me-1"></i>잔여 건수 조회
       </button>
+      <a href="/notifications/history" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-clock-history me-1"></i>발송 이력
+      </a>
       <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
         <i class="bi bi-arrow-clockwise"></i> 새로고침
       </button>
     </div>
   </div>
 
-  <!-- Sub Navigation Tabs (문자 관리 vs 알림톡 관리) -->
-  <ul class="nav nav-tabs mb-4 border-bottom gap-1">
-    <li class="nav-item">
-      <a class="nav-link active fw-bold text-primary px-3 py-2 border-bottom-0" href="/notifications/sms">
-        <i class="bi bi-chat-dots-fill me-1"></i>문자 관리 (SMS/LMS)
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link text-secondary px-3 py-2" href="/notifications/alimtalk">
-        <i class="bi bi-chat-quote-fill me-1"></i>알림톡 관리 (카카오)
-      </a>
-    </li>
-  </ul>
-
-  <!-- Summary Metric Cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3">
-        <div class="card-body p-3 d-flex align-items-center">
-          <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary-subtle text-primary me-3 flex-shrink-0" style="width: 50px; height: 50px;">
-            <i class="bi bi-card-text fs-4"></i>
-          </div>
-          <div class="flex-grow-1 min-w-0">
-            <div class="text-secondary small fw-medium">등록 템플릿</div>
-            <div class="fs-4 fw-bold text-dark mb-0 mt-1"><%= stats.totalTemplates %><span class="fs-6 fw-normal text-muted ms-1">개</span></div>
-          </div>
-        </div>
+  <!-- Aligo Live Status Banner -->
+  <div class="alert alert-primary bg-primary-subtle border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 mb-3 rounded-3 text-dark">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-info-circle-fill text-primary fs-5 flex-shrink-0"></i>
+      <div class="small">
+        <strong>[Aligo API 연동 상태]</strong>
+        <% if (aligoConfig && aligoConfig.apiKey && aligoConfig.sender) { %>
+          발신번호(<code><%= aligoConfig.sender %></code>), 계정 ID(<code><%= aligoConfig.userId %></code>)가 정상 등록되어 있습니다.
+          좌측에서 템플릿을 선택하거나 직접 작성하여 우측 모바일 화면에서 즉시 발송 테스트를 진행하세요.
+        <% } else { %>
+          계정 ID, API Key, 인증된 발신번호가 아직 설정되지 않았습니다. 
+          상단의 <strong>[Aligo 연동 설정]</strong> 버튼을 눌러 계정 정보를 입력하시면 즉시 실전송이 가능합니다.
+        <% } %>
       </div>
     </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3">
-        <div class="card-body p-3 d-flex align-items-center">
-          <div class="rounded-3 d-flex align-items-center justify-content-center bg-success-subtle text-success me-3 flex-shrink-0" style="width: 50px; height: 50px;">
-            <i class="bi bi-check2-circle fs-4"></i>
-          </div>
-          <div class="flex-grow-1 min-w-0">
-            <div class="text-secondary small fw-medium">활성 발송 규칙</div>
-            <div class="fs-4 fw-bold text-dark mb-0 mt-1"><%= stats.activeTemplates %><span class="fs-6 fw-normal text-muted ms-1">건 (USE)</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3">
-        <div class="card-body p-3 d-flex align-items-center">
-          <div class="rounded-3 d-flex align-items-center justify-content-center bg-info-subtle text-info me-3 flex-shrink-0" style="width: 50px; height: 50px;">
-            <i class="bi bi-send-check fs-4"></i>
-          </div>
-          <div class="flex-grow-1 min-w-0">
-            <div class="text-secondary small fw-medium">당월 누적 발송</div>
-            <div class="fs-4 fw-bold text-dark mb-0 mt-1"><%= stats.monthlySent.toLocaleString() %><span class="fs-6 fw-normal text-muted ms-1">건</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3">
-        <div class="card-body p-3 d-flex align-items-center">
-          <div class="rounded-3 d-flex align-items-center justify-content-center bg-warning-subtle text-warning me-3 flex-shrink-0" style="width: 50px; height: 50px;">
-            <i class="bi bi-graph-up-arrow fs-4"></i>
-          </div>
-          <div class="flex-grow-1 min-w-0">
-            <div class="text-secondary small fw-medium">발송 성공률</div>
-            <div class="fs-4 fw-bold text-dark mb-0 mt-1"><%= stats.successRate %></div>
-          </div>
-        </div>
-      </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-white text-dark border px-2 py-1 small" id="topRemainBadge">
+        SMS: <%= (remainInfo && remainInfo.SMS_CNT) ? Number(remainInfo.SMS_CNT).toLocaleString() : 0 %>건 |
+        LMS: <%= (remainInfo && remainInfo.LMS_CNT) ? Number(remainInfo.LMS_CNT).toLocaleString() : 0 %>건
+      </span>
     </div>
   </div>
 
-  <!-- Search & Filter Bar -->
-  <div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-body p-3">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filterStatus" onchange="applyFilter()">
-            <option value="">상태 전체 (USE / HIDE)</option>
-            <option value="Y">USE (발송 활성)</option>
-            <option value="N">HIDE (발송 중지)</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filterCondition" onchange="applyFilter()">
-            <option value="">발송 조건 전체 (개통일 기준)</option>
-            <option value="D_DAY">개통 당일 (D-Day)</option>
-            <option value="AFTER_D">개통 후 N일차 (D+)</option>
-            <option value="BEFORE_D">약정 만료 전 (D-)</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control" id="searchKeyword" placeholder="템플릿 코드, 템플릿명, 본문 키워드 검색..." onkeyup="if(event.key==='Enter') applyFilter()">
-            <button class="btn btn-dark" type="button" onclick="applyFilter()">
-              <i class="bi bi-search me-1"></i>검색
+  <style>
+    /* 6.5 : 3.5 간격 비율 레이아웃 */
+    @media (min-width: 992px) {
+      .col-sms-left {
+        flex: 0 0 65%;
+        max-width: 65%;
+        width: 65%;
+      }
+      .col-sms-right {
+        flex: 0 0 35%;
+        max-width: 35%;
+        width: 35%;
+      }
+    }
+    @media (max-width: 991.98px) {
+      .col-sms-left, .col-sms-right {
+        flex: 0 0 100%;
+        max-width: 100%;
+        width: 100%;
+      }
+      .col-sms-right {
+        margin-top: 1.5rem;
+      }
+    }
+
+    /* 컴팩트 스마트폰 목업 */
+    .compact-phone-mockup {
+      width: 100%;
+      max-width: 295px;
+      min-height: 440px;
+    }
+    .compact-screen {
+      min-height: 400px;
+    }
+    .compact-bubble {
+      font-size: 0.76rem;
+      line-height: 1.45;
+      min-height: 150px;
+      max-height: 230px;
+      overflow-y: auto;
+    }
+  </style>
+
+  <!-- ======================================================== -->
+  <!-- MAIN SPLIT VIEW: 좌측 65% VS 우측 35% 분할 레이아웃 -->
+  <!-- ======================================================== -->
+  <div class="row g-3 align-items-start">
+    
+    <!-- ====================================================== -->
+    <!-- LEFT COLUMN (65%): 템플릿 목록 및 발송 메시지 파라미터 빌더 -->
+    <!-- ====================================================== -->
+    <div class="col-sms-left">
+      
+      <!-- 1. 템플릿 목록 카드 (Template List) -->
+      <div class="card border-0 shadow-sm rounded-3 mb-3">
+        <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
+              <i class="bi bi-collection-fill text-primary"></i>
+              <span>문자 템플릿 목록</span>
+              <span class="badge bg-primary-subtle text-primary ms-1" id="templateCountBadge"><%= templates.length %>건</span>
+            </h5>
+            <small class="text-muted" style="font-size: 0.75rem;">원하는 템플릿을 클릭하면 우측 스마트폰 화면에 즉시 로딩됩니다.</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 d-flex align-items-center gap-1 shadow-xs" onclick="openTemplateModal()">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>신규 템플릿 등록</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-dark py-1 px-2.5 d-flex align-items-center gap-1" onclick="selectDirectInput()">
+              <i class="bi bi-pencil-square"></i>
+              <span>직접 새로 작성</span>
             </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 4. 템플릿 관리 구조 테이블 (Template List) -->
-  <div class="card border-0 shadow-sm rounded-3">
-    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
-          <i class="bi bi-list-check text-primary"></i>
-          <span>문자 템플릿 및 자동 발송 규칙 목록</span>
-          <span class="badge bg-secondary-subtle text-dark ms-1"><%= templates.length %>건</span>
-        </h5>
-        <small class="text-muted">고객 개통 데이터를 기반으로 스케줄러가 자동 발송 조건을 감지하여 문자를 발송합니다.</small>
-      </div>
-    </div>
+        <!-- 필터 & 검색 바 -->
+        <div class="px-3 pb-2 pt-1 border-bottom bg-light-subtle">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <select class="form-select form-select-sm" id="filterCondition" onchange="filterTemplates()">
+                <option value="">전체 발송조건</option>
+                <option value="D_DAY">개통 당일 (D-Day)</option>
+                <option value="AFTER_D">개통 후 N일차 (D+)</option>
+                <option value="BEFORE_D">약정 만료 전 (D-)</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="템플릿명, 키워드 검색..." onkeyup="filterTemplates()">
+                <button class="btn btn-outline-secondary" type="button" onclick="filterTemplates()">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 user-table" style="min-width: 1050px;">
-          <thead class="table-light">
-            <tr>
-              <th scope="col" class="text-center" style="width: 50px;">No</th>
-              <th scope="col" class="text-center" style="width: 80px;">유형</th>
-              <th scope="col" class="text-start" style="width: 200px;">템플릿명 (코드)</th>
-              <th scope="col" class="text-start" style="width: 170px;">발송 조건 (개통일 기준)</th>
-              <th scope="col" class="text-start" style="width: 150px;">발송 주기 및 시간</th>
-              <th scope="col" class="text-start" style="width: 160px;">치환 변수</th>
-              <th scope="col" class="text-center" style="width: 90px;">상태</th>
-              <th scope="col" class="text-center" style="width: 140px;">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (templates && templates.length > 0) { %>
-              <% templates.forEach((t, idx) => { %>
+        <!-- 템플릿 리스트 테이블 (넓어진 65% 공간 활용) -->
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height: 290px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="templateTable">
+              <thead class="table-light sticky-top small" style="z-index: 1;">
                 <tr>
-                  <td class="text-center text-muted small"><%= idx + 1 %></td>
-                  <td class="text-center">
-                    <% if (t.msg_type === 'SMS') { %>
-                      <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">SMS</span>
-                    <% } else { %>
-                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">LMS</span>
-                    <% } %>
-                  </td>
-                  <td class="text-start">
-                    <strong class="text-dark d-block"><%= t.template_name %></strong>
-                    <code class="text-muted small"><%= t.template_code %></code>
-                  </td>
-                  <td class="text-start">
-                    <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 mb-1">
-                      <i class="bi bi-calendar-event text-primary"></i>
-                      <span><%= t.condition_desc %></span>
-                    </span>
-                    <div class="small text-muted" style="font-size: 0.75rem;">대상: <%= t.target_category %></div>
-                  </td>
-                  <td class="text-start">
-                    <div class="fw-semibold text-dark small"><i class="bi bi-clock me-1 text-secondary"></i><%= t.send_time %></div>
-                    <div class="small text-muted" style="font-size: 0.75rem;"><%= t.send_cycle_desc %></div>
-                  </td>
-                  <td class="text-start">
-                    <div class="d-flex flex-wrap gap-1">
-                      <% (t.variables || []).forEach(v => { %>
-                        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;"><%= v %></span>
-                      <% }); %>
-                    </div>
-                  </td>
-                  <td class="text-center">
-                    <% if (t.use_yn === 'Y') { %>
-                      <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-xs" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
-                        <i class="bi bi-check-circle-fill me-1"></i>USE
-                      </button>
-                    <% } else { %>
-                      <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-xs" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
-                        <i class="bi bi-eye-slash-fill me-1"></i>HIDE
-                      </button>
-                    <% } %>
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-outline-primary py-0 px-2" title="미리보기 및 테스트 발송" onclick="openTestSendModalWithData(<%= JSON.stringify(t) %>)">
-                        <i class="bi bi-send"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-secondary py-0 px-2" title="템플릿 수정" onclick="editTemplate(<%= JSON.stringify(t) %>)">
-                        <i class="bi bi-pencil-square"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-danger py-0 px-2" title="템플릿 삭제" onclick="mockDeleteTemplate('<%= t.template_name %>')">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
+                  <th scope="col" class="text-center" style="width: 45px;">선택</th>
+                  <th scope="col" class="text-center" style="width: 60px;">유형</th>
+                  <th scope="col">템플릿명 (코드)</th>
+                  <th scope="col" style="width: 140px;">발송 조건</th>
+                  <th scope="col" style="width: 130px;">발송 주기 및 시간</th>
+                  <th scope="col" class="text-center" style="width: 70px;">상태</th>
+                  <th scope="col" class="text-center" style="width: 75px;">관리</th>
                 </tr>
-              <% }); %>
-            <% } else { %>
-              <tr>
-                <td colspan="8" class="text-center py-5 text-muted">등록된 문자 템플릿이 없습니다.</td>
-              </tr>
-            <% } %>
-          </tbody>
-        </table>
+              </thead>
+              <tbody id="templateListBody">
+                <% if (templates && templates.length > 0) { %>
+                  <% templates.forEach((t, idx) => { %>
+                    <tr class="template-row <%= idx === 0 ? 'table-active border-primary' : '' %>" 
+                        id="tplRow_<%= t.id %>" 
+                        style="cursor: pointer;" 
+                        onclick="onSelectTemplateRow(<%= t.id %>)">
+                      <td class="text-center">
+                        <input class="form-check-input" type="radio" name="selectedTemplateRadio" id="radioTpl_<%= t.id %>" value="<%= t.id %>" <%= idx === 0 ? 'checked' : '' %>>
+                      </td>
+                      <td class="text-center">
+                        <% if (t.msg_type === 'SMS') { %>
+                          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace" style="font-size: 0.68rem;">SMS</span>
+                        <% } else { %>
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size: 0.68rem;">LMS</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <strong class="text-dark d-block small"><%= t.template_name %></strong>
+                        <code class="text-muted small" style="font-size: 0.7rem;"><%= t.template_code %></code>
+                      </td>
+                      <td>
+                        <span class="badge bg-light text-dark border font-monospace py-0.5 px-1.5" style="font-size: 0.7rem;">
+                          <%= t.condition_desc || t.condition_type %>
+                        </span>
+                      </td>
+                      <td>
+                        <div class="small text-dark font-monospace" style="font-size: 0.72rem;">
+                          <i class="bi bi-clock me-1 text-secondary"></i><%= t.send_time %>
+                        </div>
+                        <div class="text-muted small" style="font-size: 0.68rem;"><%= t.send_cycle_desc || t.send_cycle %></div>
+                      </td>
+                      <td class="text-center" onclick="event.stopPropagation()">
+                        <button type="button" class="btn btn-xs <%= t.use_yn === 'Y' ? 'btn-success' : 'btn-danger' %> py-0.5 px-2 fw-semibold shadow-xs" 
+                                onclick="toggleTemplateUse(<%= t.id %>, this)">
+                          <%= t.use_yn === 'Y' ? 'USE' : 'HIDE' %>
+                        </button>
+                      </td>
+                      <td class="text-center" onclick="event.stopPropagation()">
+                        <div class="btn-group btn-group-sm">
+                          <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5" title="템플릿 속성 수정" onclick="editTemplateModal(<%= t.id %>)">
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1.5" title="삭제" onclick="deleteTemplate(<%= t.id %>, '<%= t.template_name %>')">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted small">등록된 템플릿이 없습니다.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 메시지 빌더 및 Aligo 발송 설정 카드 (Message Builder) -->
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-2">
+            <i class="bi bi-sliders text-primary"></i>
+            <span>메시지 내용 및 발송 설정 (Aligo 규격)</span>
+          </h5>
+          <span class="badge bg-secondary-subtle text-secondary font-monospace" id="currentLoadedTplName">템플릿 로드됨</span>
+        </div>
+
+        <div class="card-body p-3 pt-2">
+          <!-- 숨겨진 필드: 현재 선택된 템플릿 ID 및 코드 -->
+          <input type="hidden" id="activeTemplateId" value="<%= (templates && templates.length > 0) ? templates[0].id : '' %>">
+          <input type="hidden" id="activeTemplateCode" value="<%= (templates && templates.length > 0) ? templates[0].template_code : 'TEST_DIRECT' %>">
+
+          <!-- 수신 번호 & 발신 번호 행 -->
+          <div class="row g-2 mb-3">
+            <div class="col-md-7">
+              <label class="form-label small fw-semibold text-secondary d-flex justify-content-between mb-1">
+                <span>수신 번호 (Receiver) <span class="text-danger">*</span></span>
+                <span class="text-muted" style="font-size: 0.7rem;">숫자만 입력 시 자동 하이픈 (컴마 다중 가능)</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-secondary"><i class="bi bi-telephone-fill"></i></span>
+                <input type="text" class="form-control font-monospace" id="sendReceiverInput" value="010-9876-5432" 
+                       placeholder="숫자 연속 입력 (예: 01012345678)" 
+                       data-format="phone"
+                       oninput="onReceiverInputChange()"
+                       onblur="onReceiverBlur(this)">
+              </div>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small fw-semibold text-secondary mb-1">발신 번호 (Sender)</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-secondary"><i class="bi bi-broadcast-pin"></i></span>
+                <input type="text" class="form-control font-monospace bg-light" id="sendSenderInput" value="02-805-1999" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- LMS 제목 입력란 (LMS일 때만 필수/활성) -->
+          <div class="mb-3" id="titleGroupWrapper">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label small fw-semibold text-secondary mb-0">
+                메시지 제목 (LMS 장문 시 표출)
+              </label>
+              <span class="text-muted" style="font-size: 0.72rem;">
+                <strong id="titleByteCount" class="text-dark">0</strong> / 44 Byte
+              </span>
+            </div>
+            <input type="text" class="form-control form-control-sm" id="sendTitleInput" 
+                   value="<%= (templates && templates.length > 0 && templates[0].title) ? templates[0].title : '[KT몰] 개통 안내' %>" 
+                   placeholder="[KT몰] LMS 메시지 상단 제목 (최대 44Byte)" 
+                   oninput="onTitleInputChange()">
+          </div>
+
+          <!-- 메시지 본문 입력란 -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label small fw-semibold text-secondary mb-0">
+                메시지 본문 (Msg) <span class="text-danger">*</span>
+              </label>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" id="msgTypeBadge">SMS</span>
+                <span class="text-muted small" style="font-size: 0.74rem;">
+                  <strong id="contentByteCount" class="text-dark">0</strong> / 2,000 Byte (<span id="contentCharCount">0</span>자)
+                </span>
+              </div>
+            </div>
+            <textarea class="form-control font-monospace" id="sendContentInput" rows="5" 
+                      style="font-size: 0.83rem; line-height: 1.45;" 
+                      placeholder="문자 메시지 내용을 입력하세요..." 
+                      oninput="onContentInputChange()"><%= (templates && templates.length > 0) ? templates[0].content : '' %></textarea>
+            
+            <!-- 치환 변수 원클릭 삽입 버튼 툴바 -->
+            <div class="d-flex flex-wrap align-items-center gap-1.5 mt-2 p-2 bg-light rounded border">
+              <span class="small fw-semibold text-secondary me-1" style="font-size: 0.72rem;">치환 변수 삽입:</span>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{고객명}')">#{고객명}</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{개통번호}')">#{개통번호}</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{단말기명}')">#{단말기명}</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{개통일자}')">#{개통일자}</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{할부원금}')">#{할부원금}</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-1.5" onclick="insertVariableToContent('#{요금제}')">#{요금제}</button>
+            </div>
+          </div>
+
+          <!-- 치환 변수 실시간 매핑 샘플 값 (우측 모바일 화면에 즉시 치환 반영) -->
+          <div class="card border bg-light mb-3">
+            <div class="card-body p-2.5">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-secondary-subtle text-dark border font-monospace" style="font-size: 0.7rem;">치환 변수 실시간 미리보기 값</span>
+                <small class="text-muted" style="font-size: 0.7rem;">수정 즉시 우측 모바일 화면에 치환 반영됩니다</small>
+              </div>
+              <div class="row g-2">
+                <div class="col-6 col-sm-3">
+                  <label class="form-label small text-muted mb-0" style="font-size: 0.7rem;">#{고객명}</label>
+                  <input type="text" class="form-control form-control-sm" id="varSampleName" value="홍길동" placeholder="고객명 입력" oninput="updateMobileMockup()">
+                </div>
+                <div class="col-6 col-sm-3">
+                  <label class="form-label small text-muted mb-0" style="font-size: 0.7rem;">#{단말기명}</label>
+                  <input type="text" class="form-control form-control-sm" id="varSampleModel" value="갤럭시 S25 Ultra" placeholder="단말기명" oninput="updateMobileMockup()">
+                </div>
+                <div class="col-6 col-sm-3">
+                  <label class="form-label small text-muted mb-0 d-flex justify-content-between" style="font-size: 0.7rem;">
+                    <span>#{개통일자}</span>
+                    <span class="text-secondary" style="font-size: 0.65rem;">YYYY-MM-DD</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="varSampleDate" value="2026-11-07" 
+                         placeholder="예: 20261107" 
+                         data-format="date"
+                         onfocus="this.value = AppFormatters.rawDigits(this.value)"
+                         onblur="this.value = AppFormatters.formatBirthOrDate(this.value); updateMobileMockup();"
+                         oninput="updateMobileMockup()">
+                </div>
+                <div class="col-6 col-sm-3">
+                  <label class="form-label small text-muted mb-0 d-flex justify-content-between" style="font-size: 0.7rem;">
+                    <span>#{할부원금}</span>
+                    <span class="text-secondary" style="font-size: 0.65rem;">원단위 쉼표</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace text-end" id="varSamplePrice" value="850,000" 
+                         placeholder="예: 7000 또는 850000" 
+                         data-format="currency"
+                         onfocus="this.value = AppFormatters.rawDigits(this.value)"
+                         onblur="this.value = AppFormatters.formatCurrency(this.value, false); updateMobileMockup();"
+                         oninput="updateMobileMockup()">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aligo 발송 옵션: 예약 발송(rdate/rtime) 및 발송 모드(testmode_yn) -->
+          <div class="border rounded p-2.5 bg-white mb-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-6 border-end-md">
+                <div class="form-check form-switch mb-1">
+                  <input class="form-check-input" type="checkbox" id="chkReservation" onchange="toggleReservationInputs(this.checked)">
+                  <label class="form-check-label small fw-semibold text-secondary" for="chkReservation">
+                    예약 발송 설정 (Aligo rdate/rtime)
+                  </label>
+                </div>
+                <div class="row g-1 d-none" id="reservationInputArea">
+                  <div class="col-6">
+                    <input type="date" class="form-control form-control-sm" id="sendRdate">
+                  </div>
+                  <div class="col-6">
+                    <input type="time" class="form-control form-control-sm" id="sendRtime">
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted" style="font-size: 0.68rem;">* 현재 시간 기준 10분 이후 시간으로 지정해야 합니다.</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6 ps-md-3">
+                <label class="form-label small fw-semibold text-secondary mb-1">발송 모드</label>
+                <div class="d-flex gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="sendTestmodeRadio" id="modeTest" value="Y" checked>
+                    <label class="form-check-label small" for="modeTest">
+                      <strong>테스트 모드</strong> <span class="text-muted" style="font-size: 0.7rem;">(건수 미차감)</span>
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="sendTestmodeRadio" id="modeProd" value="N">
+                    <label class="form-check-label small text-danger" for="modeProd">
+                      <strong>실제 발송</strong> <span class="text-muted" style="font-size: 0.7rem;">(1건 차감)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
+
+    <!-- ====================================================== -->
+    <!-- RIGHT COLUMN (35%): 컴팩트 모바일 Sample 디바이스 목업 & 즉시 발송 컨트롤 -->
+    <!-- ====================================================== -->
+    <div class="col-sms-right" style="position: sticky; top: 1.5rem;">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 fs-6 d-flex align-items-center gap-1.5" style="font-size: 0.88rem !important;">
+            <i class="bi bi-phone text-primary"></i>
+            <span>모바일 화면 (Sample)</span>
+          </h5>
+          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace" id="mockupBadge" style="font-size: 0.68rem;">SMS</span>
+        </div>
+
+        <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center bg-light-subtle rounded-bottom-3">
+          
+          <!-- 스마트폰 실물 디바이스 목업 (컴팩트 295px 사이즈) -->
+          <div class="compact-phone-mockup shadow rounded-4 p-2.5 border border-3 border-dark bg-dark mb-2.5">
+            <!-- Notch & Speaker -->
+            <div class="d-flex justify-content-center align-items-center gap-1.5 mb-1.5">
+              <div class="bg-secondary rounded-pill" style="width: 48px; height: 4px;"></div>
+              <div class="rounded-circle bg-secondary" style="width: 5px; height: 5px;"></div>
+            </div>
+
+            <!-- Phone Screen Content -->
+            <div class="compact-screen bg-white rounded-3 p-2.5 d-flex flex-column">
+              
+              <!-- Screen Header (Carrier & Sender Info) -->
+              <div class="border-bottom pb-1.5 mb-2 text-center">
+                <div class="d-flex justify-content-between text-muted mb-1" style="font-size: 0.62rem;">
+                  <span><i class="bi bi-reception-4 me-0.5"></i>KT</span>
+                  <span id="mockupClock">오후 12:00</span>
+                  <span><i class="bi bi-battery-full"></i> 100%</span>
+                </div>
+                <div class="fw-bold small text-dark mt-0.5" style="font-size: 0.78rem;">
+                  <i class="bi bi-chat-fill text-primary me-1"></i>KT몰 메시지
+                </div>
+                <div class="text-secondary font-monospace" style="font-size: 0.68rem;" id="mockupReceiverDisplay">
+                  010-9876-5432
+                </div>
+                <div class="badge bg-light text-dark border small mt-0.5 py-0 px-1.5" style="font-size: 0.62rem;" id="mockupSenderDisplay">
+                  발신: <%= (aligoConfig && aligoConfig.sender) ? aligoConfig.sender : '02-805-1999' %>
+                </div>
+              </div>
+
+              <!-- Message Title Box (LMS 전용) -->
+              <div class="p-1.5 mb-1.5 rounded bg-light border-start border-3 border-primary fw-bold text-dark small" id="mockupTitleBox" style="font-size: 0.76rem; word-break: break-all;">
+                [KT몰] 개통 안내
+              </div>
+
+              <!-- Message Bubble -->
+              <div class="compact-bubble bg-light p-2.5 rounded-3 border mb-1.5 text-start flex-grow-1" 
+                   id="mockupContentBubble">
+                문자 메시지 내용이 여기에 실시간으로 표시됩니다.
+              </div>
+
+              <!-- Bottom Byte Meter Bar -->
+              <div class="mt-auto pt-1.5 border-top">
+                <div class="d-flex justify-content-between align-items-center small mb-1" style="font-size: 0.66rem;">
+                  <span class="text-muted">용량:</span>
+                  <span class="fw-bold text-dark" id="mockupByteStatus">0 / 90 Byte (SMS)</span>
+                </div>
+                <div class="progress" style="height: 4px;">
+                  <div class="progress-bar bg-primary" role="progressbar" id="mockupProgressBar" style="width: 10%;"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 발송 실행 버튼 (목업 너비에 딱 맞춤) -->
+          <div class="w-100" style="max-width: 295px;">
+            <button type="button" class="btn btn-primary w-100 py-2 shadow-sm fw-bold d-flex align-items-center justify-content-center gap-1.5" 
+                    id="btnExecuteSend" onclick="executeAligoSend()">
+              <i class="bi bi-send-fill"></i>
+              <span id="btnExecuteSendText">Aligo 문자 발송 실행</span>
+            </button>
+
+            <!-- 발송 결과 피드백 카드 영역 -->
+            <div id="sendResultFeedbackArea" class="mt-2.5 d-none"></div>
+
+            <!-- 하단 알리고 계정 잔여량 위젯 카드 -->
+            <div class="card border bg-white mt-2.5 shadow-xs">
+              <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                <div>
+                  <small class="text-muted d-block" style="font-size: 0.65rem;">Aligo 잔여 발송 건수</small>
+                  <span class="small fw-bold text-dark" id="cardRemainDisplay" style="font-size: 0.73rem;">
+                    SMS: <%= (remainInfo && remainInfo.SMS_CNT) ? Number(remainInfo.SMS_CNT).toLocaleString() : 0 %>건 |
+                    LMS: <%= (remainInfo && remainInfo.LMS_CNT) ? Number(remainInfo.LMS_CNT).toLocaleString() : 0 %>건
+                  </span>
+                </div>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-1.5" onclick="checkAligoRemain(true)" style="font-size: 0.68rem;">
+                  <i class="bi bi-arrow-clockwise"></i> 새로고침
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
   </div>
 </main>
 
 <!-- ======================================================== -->
-<!-- MODAL 1: 템플릿 설정 및 등록/수정 (발송조건, 주기 포함)     -->
+<!-- MODAL 1: 템플릿 신규 등록 및 속성 수정 모달 -->
 <!-- ======================================================== -->
-<div class="modal fade" id="modalTemplate" tabindex="-1" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+<div class="modal fade" id="modalTemplateEdit" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-light">
-        <h5 class="modal-title fw-bold fs-6" id="modalTemplateTitle">
-          <i class="bi bi-chat-dots-fill text-primary me-1"></i> 문자 발송 템플릿 설정
+        <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2" id="tplModalTitle">
+          <i class="bi bi-pencil-square text-primary"></i>
+          <span>템플릿 등록 / 수정</span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
-        <form id="formTemplate">
-          <!-- 1. 기본 템플릿 정보 -->
-          <div class="card border bg-light mb-3">
-            <div class="card-body p-3">
-              <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-1">
-                <i class="bi bi-info-circle-fill text-primary"></i> 1. 템플릿 기본 정보
-              </h6>
-              <div class="row g-2 mb-2">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">템플릿 코드 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm font-monospace text-uppercase" id="tplCode" placeholder="예: SMS_WELCOME_01" value="SMS_OPEN_D30">
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label small fw-semibold text-secondary">템플릿 명칭 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm" id="tplName" placeholder="예: 개통 30일차 안심 케어 문자" value="개통 30일차 요금제/단말 점검 안내">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-secondary">메시지 유형</label>
-                  <select class="form-select form-select-sm" id="tplMsgType" onchange="updateMsgTypeLimit(this.value)">
-                    <option value="LMS">LMS (장문, 최대 2,000자)</option>
-                    <option value="SMS">SMS (단문, 90 Bytes)</option>
-                  </select>
-                </div>
+        <form id="formTemplateEdit" onsubmit="saveTemplateData(event)">
+          <input type="hidden" id="editTplId" value="">
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary">템플릿 코드 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm font-monospace" id="editTplCode" placeholder="예: SMS_OPEN_WELCOME" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary">템플릿 명칭 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="editTplName" placeholder="예: 개통 당일 감사 인사" required>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">발송 조건 기준</label>
+              <select class="form-select form-select-sm" id="editConditionType">
+                <option value="D_DAY">개통 당일 (D-Day)</option>
+                <option value="AFTER_D">개통 후 N일차 (D+)</option>
+                <option value="BEFORE_D">약정 만료 전 (D-)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">기준 일수 (일)</label>
+              <input type="number" class="form-control form-control-sm" id="editConditionDays" value="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">발송 주기 및 시간</label>
+              <div class="input-group input-group-sm">
+                <select class="form-select" id="editSendCycle">
+                  <option value="REALTIME">실시간 즉시</option>
+                  <option value="DAILY">매일 1회</option>
+                  <option value="WEEKLY">매주 1회</option>
+                </select>
+                <input type="text" class="form-control" id="editSendTime" value="10:00" placeholder="10:00">
               </div>
             </div>
           </div>
 
-          <!-- 2. 발송 조건 설정 (개통일자 기준) -->
-          <div class="card border bg-light mb-3">
-            <div class="card-body p-3">
-              <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-1">
-                <i class="bi bi-calendar-check-fill text-success"></i> 2. 발송 조건 설정 (개통일자 기준)
-              </h6>
-              <div class="row g-2 mb-2">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">기준 일자</label>
-                  <select class="form-select form-select-sm" id="tplConditionBase">
-                    <option value="opening_dt" selected>개통일자 (activation_log.opening_dt)</option>
-                    <option value="join_dt">가입일자 (app_user.join_dt)</option>
-                    <option value="birth_dt">생년월일 (생일 축하)</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">조건 시점</label>
-                  <select class="form-select form-select-sm" id="tplConditionType">
-                    <option value="AFTER_D">기준일로부터 N일 후 (D+)</option>
-                    <option value="D_DAY">기준일 당일 (D-Day)</option>
-                    <option value="BEFORE_D">기준일로부터 N일 전 (D-)</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">일수 (Days)</label>
-                  <div class="input-group input-group-sm">
-                    <input type="number" class="form-control" id="tplConditionDays" value="30" min="0">
-                    <span class="input-group-text">일차</span>
-                  </div>
-                </div>
-              </div>
-              <div class="row g-2">
-                <div class="col-md-12">
-                  <label class="form-label small fw-semibold text-secondary">대상 가입유형 필터 (선택)</label>
-                  <div class="d-flex gap-3 small">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="catAll" checked>
-                      <label class="form-check-label" for="catAll">전체</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="catChange">
-                      <label class="form-check-label" for="catChange">기기변경</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="catMnp">
-                      <label class="form-check-label" for="catMnp">번호이동</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="catNew">
-                      <label class="form-check-label" for="catNew">신규가입</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">LMS 제목</label>
+            <input type="text" class="form-control form-control-sm" id="editModalTitleInput" placeholder="[KT몰] 제목 입력 (LMS인 경우)">
           </div>
 
-          <!-- 3. 발송 주기 설정 (Schedule) -->
-          <div class="card border bg-light mb-3">
-            <div class="card-body p-3">
-              <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-1">
-                <i class="bi bi-clock-history text-warning"></i> 3. 발송 주기 설정 (Schedule)
-              </h6>
-              <div class="row g-2">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">발송 주기 방식</label>
-                  <select class="form-select form-select-sm" id="tplCycle">
-                    <option value="DAILY" selected>매일 정기 자동 발송</option>
-                    <option value="WEEKLY">매주 특정 요일 발송</option>
-                    <option value="MONTHLY">매월 특정 일자 발송</option>
-                    <option value="REALTIME">조건 충족 시 실시간 즉시 발송</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">발송 희망 시간</label>
-                  <input type="time" class="form-control form-control-sm" id="tplSendTime" value="10:00">
-                  <div class="form-text small" style="font-size: 0.72rem;">* 통신사 광고/안내 규정 (08:00 ~ 20:50)</div>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-secondary">표출 상태</label>
-                  <select class="form-select form-select-sm" id="tplUseYn">
-                    <option value="Y" selected>USE (규칙 활성화)</option>
-                    <option value="N">HIDE (발송 중지)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">메시지 본문 내용 <span class="text-danger">*</span></label>
+            <textarea class="form-control form-control-sm font-monospace" id="editModalContentInput" rows="6" placeholder="문자 메시지 내용을 작성하세요..." required></textarea>
           </div>
 
-          <!-- 4. 템플릿 본문 및 치환 변수 설정 -->
-          <div class="card border bg-white mb-2">
-            <div class="card-body p-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1">
-                  <i class="bi bi-pencil-square text-primary"></i> 4. 메시지 본문 설정
-                </h6>
-                <div class="small text-muted" id="byteCounterBox">
-                  <span id="charCount">0</span>자 / <span id="byteCount" class="fw-bold text-primary">0</span> Bytes
-                </div>
-              </div>
-
-              <!-- 치환 변수 삽입 버튼 툴바 -->
-              <div class="mb-2 p-2 bg-light rounded border">
-                <div class="small fw-semibold text-secondary mb-1">
-                  <i class="bi bi-code-slash me-1"></i>치환 변수 태그 (클릭 시 본문에 자동 삽입):
-                </div>
-                <div class="d-flex flex-wrap gap-1">
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{고객명}')">+#{고객명}</button>
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{개통번호}')">+#{개통번호}</button>
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{단말기명}')">+#{단말기명}</button>
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{개통일자}')">+#{개통일자}</button>
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{할부원금}')">+#{할부원금}</button>
-                  <button type="button" class="btn btn-xs btn-outline-dark" onclick="insertVariable('#{가입유형}')">+#{가입유형}</button>
-                </div>
-              </div>
-
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-secondary">LMS 제목</label>
-                <input type="text" class="form-control form-control-sm" id="tplTitleInput" placeholder="LMS 메시지 상단 제목" value="[KT 마켓] 개통 30일차 안심 케어 안내">
-              </div>
-
-              <div>
-                <label class="form-label small fw-semibold text-secondary">메시지 본문 내용 <span class="text-danger">*</span></label>
-                <textarea class="form-control form-control-sm font-monospace" id="tplContentInput" rows="6" oninput="calculateBytes(this.value)" placeholder="문자 메시지 내용을 작성하세요. 치환 변수를 포함할 수 있습니다.">[KT 마켓] #{고객명}님, 개통 후 30일이 경과하였습니다.
-단말기(#{단말기명}) 사용 중 초기 설정이나 통화 품질에 불편함이 있으시다면 언제든 KT 고객센터(1588-0000)로 문의해 주세요.</textarea>
-              </div>
-            </div>
+          <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">닫기</button>
+            <button type="submit" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnSaveTplModal">
+              <i class="bi bi-check-lg me-1"></i>저장하기
+            </button>
           </div>
         </form>
       </div>
-      <div class="modal-footer bg-light py-2">
-        <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">닫기</button>
-        <button type="button" class="btn btn-sm btn-primary px-3" onclick="mockSaveTemplate()">
-          <i class="bi bi-check-lg me-1"></i>저장하기 (화면 데모)
-        </button>
-      </div>
     </div>
   </div>
 </div>
 
 <!-- ======================================================== -->
-<!-- MODAL 2: 5. 테스트 발송 해볼 수 있는 기능 구조 (스마트폰 목업) -->
+<!-- MODAL 2: Aligo API 연동 설정 모달 -->
 <!-- ======================================================== -->
-<div class="modal fade" id="modalTestSend" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
+<div class="modal fade" id="modalAligoConfig" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-light">
-        <h5 class="modal-title fw-bold fs-6">
-          <i class="bi bi-phone text-primary me-1"></i> 5. 문자 테스트 발송 및 실시간 미리보기
+        <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2">
+          <i class="bi bi-gear-fill text-primary"></i>
+          <span>Aligo SMS/LMS 연동 설정</span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
-        <div class="row g-4">
-          <!-- 좌측: 테스트 발송 파라미터 입력 영역 -->
-          <div class="col-lg-6 border-end">
-            <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-2">
-              <i class="bi bi-send text-primary"></i>
-              <span>테스트 수신자 및 치환 변수 매핑</span>
-            </h6>
-
-            <div class="mb-3">
-              <label class="form-label small fw-semibold text-secondary">발송할 템플릿 선택</label>
-              <select class="form-select form-select-sm" id="testTplSelect" onchange="onSelectTestTemplate(this.value)">
-                <% templates.forEach(t => { %>
-                  <option value="<%= t.id %>"><%= t.template_name %> (<%= t.msg_type %>)</option>
-                <% }); %>
-              </select>
+        <!-- 공인 IP 안내 카드 (Aligo IP 화이트리스트 등록 필수) -->
+        <div class="alert alert-warning border border-warning-subtle py-2 px-3 small mb-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <strong class="text-dark"><i class="bi bi-shield-lock-fill text-warning me-1"></i>현재 발송 서버 공인 IP:</strong>
+              <code class="fs-6 fw-bold text-primary mx-1" id="currentServerIpText">222.108.71.219</code>
             </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-semibold text-secondary">테스트 수신 번호 <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm font-monospace" id="testPhoneInput" value="010-9876-5432" placeholder="010-0000-0000">
-              <div class="form-text small">관리자 또는 담당자 휴대폰 번호를 입력하여 실제 문자 수신 형태를 검증합니다.</div>
-            </div>
-
-            <div class="card border bg-light mb-3">
-              <div class="card-body p-3">
-                <span class="badge bg-secondary-subtle text-dark border mb-2 font-monospace">치환 변수 샘플 값 매핑</span>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <label class="form-label small text-muted mb-1">#{고객명}</label>
-                    <input type="text" class="form-control form-control-sm" id="sampleName" value="홍길동" oninput="updatePreviewPhone()">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small text-muted mb-1">#{단말기명}</label>
-                    <input type="text" class="form-control form-control-sm" id="sampleModel" value="갤럭시 S25 Ultra" oninput="updatePreviewPhone()">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small text-muted mb-1">#{개통일자}</label>
-                    <input type="date" class="form-control form-control-sm" id="sampleDate" value="2026-11-06" oninput="updatePreviewPhone()">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small text-muted mb-1">#{할부원금}</label>
-                    <input type="text" class="form-control form-control-sm" id="samplePrincipal" value="850,000" oninput="updatePreviewPhone()">
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="d-grid">
-              <button type="button" class="btn btn-primary py-2 shadow-sm" onclick="mockSendTestSms()">
-                <i class="bi bi-send-fill me-1"></i>테스트 문자 즉시 발송하기
-              </button>
-            </div>
-            <div id="testSendAlert" class="alert alert-success mt-3 py-2 px-3 small d-none"></div>
+            <button type="button" class="btn btn-xs btn-outline-dark py-0.5 px-2" onclick="navigator.clipboard.writeText('222.108.71.219'); alert('공인 IP가 클립보드에 복사되었습니다: 222.108.71.219');">
+              <i class="bi bi-clipboard me-1"></i>IP 복사
+            </button>
           </div>
-
-          <!-- 우측: 스마트폰 디바이스 목업 (실제 모바일 화면처럼 렌더링) -->
-          <div class="col-lg-6 d-flex justify-content-center">
-            <div class="phone-mockup shadow-lg rounded-4 p-3 border border-3 border-dark bg-dark" style="width: 320px; min-height: 480px;">
-              <!-- Phone Notch & Speaker -->
-              <div class="d-flex justify-content-center mb-2">
-                <div class="bg-secondary rounded-pill" style="width: 70px; height: 6px;"></div>
-              </div>
-
-              <!-- Phone Screen Content -->
-              <div class="bg-white rounded-3 p-3 d-flex flex-column" style="min-height: 440px;">
-                <!-- Phone Header -->
-                <div class="border-bottom pb-2 mb-3 text-center">
-                  <div class="text-muted" style="font-size: 0.65rem;">오늘 오전 10:00</div>
-                  <div class="fw-bold small text-dark"><i class="bi bi-chat-fill text-primary me-1"></i>KT 마켓 알림</div>
-                  <div class="text-secondary" style="font-size: 0.7rem;" id="previewReceiverPhone">010-9876-5432</div>
-                </div>
-
-                <!-- Message Bubble -->
-                <div class="bg-light p-3 rounded-3 border mb-2 text-start" style="font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap;" id="phoneMessageBubble">
-[KT 마켓] 홍길동님, 개통 후 30일이 경과하였습니다.
-단말기(갤럭시 S25 Ultra) 사용 중 초기 설정이나 통화 품질에 불편함이 있으시다면 언제든 KT 고객센터(1588-0000)로 문의해 주세요.
-                </div>
-
-                <div class="mt-auto text-center pt-2 border-top">
-                  <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">
-                    <i class="bi bi-shield-check me-1"></i>통신사 규격 검증 완료
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div class="text-muted mt-1" style="font-size: 0.73rem;">
+            * 알리고 관리자(<code>smartsms.aligo.in</code>) > <strong>문자 API > API 연동 관리</strong>의 [발송 서버 IP 등록]에 위 IP를 등록해야 <code>-101 IP인증 오류</code> 없이 정상 발송됩니다.
           </div>
         </div>
+
+        <form id="formAligoConfig" onsubmit="saveAligoConfig(event)">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Aligo API Key <span class="text-danger">*</span></label>
+            <input type="password" class="form-control form-control-sm font-monospace" id="cfgApiKey" value="<%= (aligoConfig && aligoConfig.apiKey) ? aligoConfig.apiKey : '' %>" placeholder="알리고 발급 API 키 입력" required>
+            <div class="form-text small">알리고 관리자 > API 연동 관리에서 발급받은 API Key입니다.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Aligo 계정 ID (User ID) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm font-monospace" id="cfgUserId" value="<%= (aligoConfig && aligoConfig.userId) ? aligoConfig.userId : '' %>" placeholder="알리고 로그인 아이디" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">사전 등록 발신 번호 (Sender) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm font-monospace" id="cfgSender" value="<%= (aligoConfig && aligoConfig.sender) ? aligoConfig.sender : '' %>" placeholder="예: 028051999 또는 15880000" required>
+            <div class="form-text small">알리고에 통신서비스 이용증명원 등록을 마친 인증 발신번호여야 합니다.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">발송 모드 기본값</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="cfgTestmode" id="cfgModeTest" value="Y" <%= (!aligoConfig || aligoConfig.testmodeYn === 'Y') ? 'checked' : '' %>>
+                <label class="form-check-label small" for="cfgModeTest">
+                  <strong>테스트 모드 (Y)</strong> <span class="text-muted">(건수 차감 없음)</span>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="cfgTestmode" id="cfgModeProd" value="N" <%= (aligoConfig && aligoConfig.testmodeYn === 'N') ? 'checked' : '' %>>
+                <label class="form-check-label small" for="cfgModeProd">
+                  <strong>실제 발송 모드 (N)</strong> <span class="text-danger">(잔여건수 차감)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">닫기</button>
+            <button type="submit" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnSaveAligoConfig">
+              <i class="bi bi-check-lg me-1"></i>설정 저장
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ======================================================== -->
+<!-- 클라이언트 인터랙션 및 Aligo 연동 스크립트 -->
+<!-- ======================================================== -->
 <script>
-  const templateList = <%- JSON.stringify(templates) %>;
+  // 서버로부터 전달받은 템플릿 원본 데이터
+  const templatesData = <%- JSON.stringify(templates || []) %>;
+  let activeTemplate = templatesData.length > 0 ? templatesData[0] : null;
 
-  // 글자 수 및 바이트 계산기
+  document.addEventListener('DOMContentLoaded', () => {
+    // 실시간 시계 표시
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    // 초기 화면 바인딩
+    if (activeTemplate) {
+      loadTemplateIntoBuilder(activeTemplate);
+    } else {
+      updateMobileMockup();
+    }
+  });
+
+  function updateClock() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? '오후' : '오전';
+    const displayHour = hours % 12 || 12;
+    const clockEl = document.getElementById('mockupClock');
+    if (clockEl) clockEl.textContent = `${ampm} ${displayHour}:${minutes}`;
+  }
+
+  // 바이트 수 계산 (한글 2Byte, 영문/기호 1Byte - EUC-KR 규격)
   function calculateBytes(str) {
+    if (!str) return 0;
     let bytes = 0;
     for (let i = 0; i < str.length; i++) {
       const code = str.charCodeAt(i);
       bytes += (code > 128) ? 2 : 1;
     }
-    document.getElementById('charCount').textContent = str.length;
-    document.getElementById('byteCount').textContent = bytes;
+    return bytes;
   }
 
-  function updateMsgTypeLimit(type) {
-    const titleBox = document.getElementById('tplTitleInput');
-    if (type === 'SMS') {
-      titleBox.disabled = true;
-      titleBox.value = '';
-    } else {
-      titleBox.disabled = false;
-      if (!titleBox.value) titleBox.value = '[KT 마켓] 안내';
+  // 템플릿 행 클릭 시 선택 로직
+  function onSelectTemplateRow(id) {
+    const t = templatesData.find(item => item.id === id);
+    if (!t) return;
+
+    activeTemplate = t;
+
+    // 테이블 행 스타일 갱신
+    document.querySelectorAll('.template-row').forEach(r => r.classList.remove('table-active', 'border-primary'));
+    const targetRow = document.getElementById('tplRow_' + id);
+    if (targetRow) targetRow.classList.add('table-active', 'border-primary');
+
+    const radio = document.getElementById('radioTpl_' + id);
+    if (radio) radio.checked = true;
+
+    // 빌더 및 모바일 목업에 로드
+    loadTemplateIntoBuilder(t);
+  }
+
+  // 빌더 폼에 템플릿 데이터 채우기
+  function loadTemplateIntoBuilder(t) {
+    document.getElementById('activeTemplateId').value = t.id || '';
+    document.getElementById('activeTemplateCode').value = t.template_code || 'TEST_DIRECT';
+    document.getElementById('currentLoadedTplName').textContent = `템플릿: ${t.template_name}`;
+
+    const titleInput = document.getElementById('sendTitleInput');
+    titleInput.value = t.title || (t.msg_type === 'LMS' ? '[KT몰] 안내' : '');
+
+    const contentInput = document.getElementById('sendContentInput');
+    contentInput.value = t.content || '';
+
+    updateMobileMockup();
+  }
+
+  // 직접 새로 작성 모드
+  function selectDirectInput() {
+    activeTemplate = null;
+    document.querySelectorAll('.template-row').forEach(r => r.classList.remove('table-active', 'border-primary'));
+    document.querySelectorAll('input[name="selectedTemplateRadio"]').forEach(radio => radio.checked = false);
+
+    document.getElementById('activeTemplateId').value = '';
+    document.getElementById('activeTemplateCode').value = 'TEST_DIRECT';
+    document.getElementById('currentLoadedTplName').textContent = '직접 새로 작성';
+
+    document.getElementById('sendTitleInput').value = '[KT몰] 안내';
+    document.getElementById('sendContentInput').value = '';
+    document.getElementById('sendContentInput').focus();
+
+    updateMobileMockup();
+  }
+
+  // 수신 번호 입력 및 blur 핸들러
+  function onReceiverInputChange() {
+    updateMobileMockup();
+  }
+
+  function onReceiverBlur(el) {
+    if (window.AppFormatters) {
+      el.value = AppFormatters.formatPhone(el.value);
     }
+    updateMobileMockup();
   }
 
-  function insertVariable(v) {
-    const area = document.getElementById('tplContentInput');
+  // 제목 입력 시 이벤트
+  function onTitleInputChange() {
+    updateMobileMockup();
+  }
+
+  // 치환 변수 삽입
+  function insertVariableToContent(v) {
+    const area = document.getElementById('sendContentInput');
     const start = area.selectionStart;
     const end = area.selectionEnd;
     const text = area.value;
     area.value = text.substring(0, start) + v + text.substring(end);
     area.focus();
     area.selectionStart = area.selectionEnd = start + v.length;
-    calculateBytes(area.value);
+    updateMobileMockup();
   }
 
-  function openTemplateModal() {
-    document.getElementById('formTemplate').reset();
-    document.getElementById('modalTemplateTitle').innerHTML = '<i class="bi bi-chat-dots-fill text-primary me-1"></i> 신규 문자 발송 템플릿 등록';
-    calculateBytes(document.getElementById('tplContentInput').value);
-    const modalEl = document.getElementById('modalTemplate');
-    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-    if (modal) modal.show();
-  }
+  // 모바일 목업 및 바이트 계산 실시간 업데이트
+  function updateMobileMockup() {
+    const rawReceiver = document.getElementById('sendReceiverInput').value.trim() || '010-9876-5432';
+    const sender = document.getElementById('sendSenderInput').value.trim() || '02-805-1999';
+    let title = document.getElementById('sendTitleInput').value.trim();
+    let rawContent = document.getElementById('sendContentInput').value;
 
-  function editTemplate(t) {
-    document.getElementById('modalTemplateTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-1"></i> 템플릿 수정: ' + t.template_name;
-    document.getElementById('tplCode').value = t.template_code;
-    document.getElementById('tplName').value = t.template_name;
-    document.getElementById('tplMsgType').value = t.msg_type;
-    document.getElementById('tplTitleInput').value = t.title || '';
-    document.getElementById('tplContentInput').value = t.content;
-    document.getElementById('tplUseYn').value = t.use_yn;
-    calculateBytes(t.content);
-    const modalEl = document.getElementById('modalTemplate');
-    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-    if (modal) modal.show();
-  }
+    // 전화번호 포맷팅 (01012345678 -> 010-1234-5678)
+    const formattedReceiver = window.AppFormatters ? AppFormatters.formatPhone(rawReceiver) : rawReceiver;
 
-  function openTestSendModal() {
-    onSelectTestTemplate(document.getElementById('testTplSelect').value);
-    const modalEl = document.getElementById('modalTestSend');
-    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-    if (modal) modal.show();
-  }
+    // 제목 바이트 계산
+    const titleBytes = calculateBytes(title);
+    document.getElementById('titleByteCount').textContent = titleBytes;
 
-  function openTestSendModalWithData(t) {
-    document.getElementById('testTplSelect').value = t.id;
-    onSelectTestTemplate(t.id);
-    const modalEl = document.getElementById('modalTestSend');
-    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-    if (modal) modal.show();
-  }
+    // 치환 변수 매핑 값 (입력 시 숫자로 들어와도 표출 시 상황별 자동 포맷팅)
+    const sampleName = document.getElementById('varSampleName').value.trim() || '홍길동';
+    const sampleModel = document.getElementById('varSampleModel').value.trim() || '갤럭시 S25 Ultra';
+    
+    // 생년월일 / 개통일자 (20261107 -> 2026-11-07)
+    const rawDate = document.getElementById('varSampleDate').value.trim() || '2026-11-07';
+    const sampleDate = window.AppFormatters ? AppFormatters.formatBirthOrDate(rawDate) : rawDate;
 
-  function onSelectTestTemplate(id) {
-    const t = templateList.find(item => String(item.id) === String(id)) || templateList[0];
-    if (!t) return;
-    updatePreviewPhone();
-  }
+    // 금액 (7000 -> 7,000, 850000 -> 850,000)
+    const rawPrice = document.getElementById('varSamplePrice').value.trim() || '850,000';
+    const samplePrice = window.AppFormatters ? AppFormatters.formatCurrency(rawPrice, false) : rawPrice;
 
-  function updatePreviewPhone() {
-    const tId = document.getElementById('testTplSelect').value;
-    const t = templateList.find(item => String(item.id) === String(tId)) || templateList[0];
-    if (!t) return;
+    // 본문 내 변수 치환
+    let renderedContent = rawContent
+      .replace(/#\{고객명\}|\{NAME\}|\{고객명\}/gi, sampleName)
+      .replace(/#\{개통번호\}|\{PHONE\}|\{개통번호\}/gi, formattedReceiver)
+      .replace(/#\{단말기명\}|\{MODEL\}|\{단말기명\}/gi, sampleModel)
+      .replace(/#\{개통일자\}|\{DATE\}|\{개통일자\}/gi, sampleDate)
+      .replace(/#\{할부원금\}|\{PRICE\}|\{할부원금\}/gi, samplePrice)
+      .replace(/#\{요금제\}|\{PLAN\}|\{요금제\}/gi, '5G 베이직');
 
-    let content = t.content;
-    const name = document.getElementById('sampleName').value || '고객';
-    const model = document.getElementById('sampleModel').value || '단말기';
-    const date = document.getElementById('sampleDate').value || '2026-11-06';
-    const principal = document.getElementById('samplePrincipal').value || '0';
-    const phone = document.getElementById('testPhoneInput').value || '010-0000-0000';
+    // 바이트 계산 (치환 후 기준)
+    const contentBytes = calculateBytes(renderedContent);
+    const contentChars = renderedContent.length;
+    const isLms = contentBytes > 90;
 
-    content = content.replace(/#{고객명}/g, name);
-    content = content.replace(/#{단말기명}/g, model);
-    content = content.replace(/#{개통일자}/g, date);
-    content = content.replace(/#{개통번호}/g, phone);
-    content = content.replace(/#{할부원금}/g, principal);
+    // 좌측 빌더 뱃지 갱신
+    const msgTypeBadge = document.getElementById('msgTypeBadge');
+    msgTypeBadge.textContent = isLms ? 'LMS' : 'SMS';
+    msgTypeBadge.className = isLms 
+      ? 'badge bg-primary-subtle text-primary border border-primary-subtle' 
+      : 'badge bg-info-subtle text-info-emphasis border border-info-subtle';
 
-    document.getElementById('phoneMessageBubble').textContent = content;
-    document.getElementById('previewReceiverPhone').textContent = phone;
-  }
+    document.getElementById('contentByteCount').textContent = contentBytes;
+    document.getElementById('contentCharCount').textContent = contentChars;
 
-  function mockSendTestSms() {
-    const phone = document.getElementById('testPhoneInput').value;
-    const box = document.getElementById('testSendAlert');
-    box.className = 'alert alert-success mt-3 py-2 px-3 small';
-    box.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> [${phone}] 번호로 테스트 문자가 정상 요청되었습니다. (화면 테스트 구조)`;
-    box.classList.remove('d-none');
-    setTimeout(() => box.classList.add('d-none'), 3500);
-  }
+    // 우측 모바일 목업에 반영
+    document.getElementById('mockupReceiverDisplay').textContent = formattedReceiver;
+    document.getElementById('mockupSenderDisplay').textContent = `발신: ${sender}`;
 
-  function mockSaveTemplate() {
-    alert('템플릿 설정이 성공적으로 저장되었습니다. (화면 구성 데모)');
-    const modalEl = document.getElementById('modalTemplate');
-    const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getInstance(modalEl) : null;
-    if (modal) modal.hide();
-  }
+    const mockupBadge = document.getElementById('mockupBadge');
+    mockupBadge.textContent = isLms ? 'LMS (장문)' : 'SMS (단문)';
+    mockupBadge.className = isLms 
+      ? 'badge bg-primary-subtle text-primary border border-primary-subtle font-monospace' 
+      : 'badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace';
 
-  function mockToggleStatus(btn, name) {
-    const isUse = btn.classList.contains('btn-success');
-    if (isUse) {
-      btn.className = 'btn btn-sm btn-danger px-3 py-1 fw-bold shadow-xs';
-      btn.innerHTML = '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
-      alert(`[${name}] 템플릿이 [HIDE (발송 중지)] 상태로 변경되었습니다.`);
+    // LMS 제목 박스 표시 여부
+    const mockupTitleBox = document.getElementById('mockupTitleBox');
+    if (isLms) {
+      mockupTitleBox.classList.remove('d-none');
+      mockupTitleBox.textContent = title || '[KT몰] 알림';
     } else {
-      btn.className = 'btn btn-sm btn-success px-3 py-1 fw-bold shadow-xs';
-      btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>USE';
-      alert(`[${name}] 템플릿이 [USE (발송 활성)] 상태로 변경되었습니다.`);
+      mockupTitleBox.classList.add('d-none');
+    }
+
+    // 본문 말풍선
+    const bubble = document.getElementById('mockupContentBubble');
+    bubble.textContent = renderedContent || '(메시지 본문 내용을 입력하세요)';
+
+    // 바이트 게이지 바
+    const maxBytes = isLms ? 2000 : 90;
+    const percentage = Math.min(100, Math.round((contentBytes / maxBytes) * 100));
+    document.getElementById('mockupByteStatus').textContent = `${contentBytes} / ${maxBytes} Byte (${isLms ? 'LMS' : 'SMS'})`;
+    const progressBar = document.getElementById('mockupProgressBar');
+    progressBar.style.width = `${percentage}%`;
+    progressBar.className = isLms ? 'progress-bar bg-primary' : 'progress-bar bg-info';
+  }
+
+  // 예약 발송 체크박스 토글
+  function toggleReservationInputs(checked) {
+    const area = document.getElementById('reservationInputArea');
+    if (checked) {
+      area.classList.remove('d-none');
+      // 기본값 세팅 (현재 시간 + 15분)
+      const now = new Date(Date.now() + 15 * 60 * 1000);
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('sendRdate').value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('sendRtime').value = `${hh}:${min}`;
+    } else {
+      area.classList.add('d-none');
+      document.getElementById('sendRdate').value = '';
+      document.getElementById('sendRtime').value = '';
     }
   }
 
-  function mockDeleteTemplate(name) {
-    if (confirm(`[${name}] 템플릿을 삭제하시겠습니까? (화면 데모)`)) {
-      alert(`[${name}] 템플릿이 삭제되었습니다.`);
+  // 템플릿 필터링 (검색 & 조건)
+  function filterTemplates() {
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const cond = document.getElementById('filterCondition').value;
+
+    const rows = document.querySelectorAll('#templateListBody tr.template-row');
+    let visibleCount = 0;
+
+    rows.forEach(r => {
+      const text = r.textContent.toLowerCase();
+      let match = true;
+      if (keyword && !text.includes(keyword)) match = false;
+      if (cond && !r.innerHTML.includes(cond)) match = false;
+
+      r.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+
+    document.getElementById('templateCountBadge').textContent = `${visibleCount}건`;
+  }
+
+  // ========================================================
+  // Aligo 문자 발송 실행 (sms_sample 규격 POST 전송)
+  // ========================================================
+  async function executeAligoSend() {
+    const receiver = document.getElementById('sendReceiverInput').value.trim();
+    const title = document.getElementById('sendTitleInput').value.trim();
+    const rawContent = document.getElementById('sendContentInput').value;
+    const templateCode = document.getElementById('activeTemplateCode').value || 'TEST_DIRECT';
+
+    if (!receiver) {
+      alert('수신 번호를 입력해 주세요.');
+      document.getElementById('sendReceiverInput').focus();
+      return;
+    }
+    if (!rawContent || !rawContent.trim()) {
+      alert('발송할 메시지 본문을 입력해 주세요.');
+      document.getElementById('sendContentInput').focus();
+      return;
+    }
+
+    // 치환 변수 적용된 본문 생성
+    const sampleName = document.getElementById('varSampleName').value.trim() || '홍길동';
+    const sampleModel = document.getElementById('varSampleModel').value.trim() || '갤럭시 S25 Ultra';
+    const sampleDate = document.getElementById('varSampleDate').value.trim() || '2026-11-07';
+    const samplePrice = document.getElementById('varSamplePrice').value.trim() || '850,000';
+
+    const finalContent = rawContent
+      .replace(/#\{고객명\}|\{NAME\}|\{고객명\}/gi, sampleName)
+      .replace(/#\{개통번호\}|\{PHONE\}|\{개통번호\}/gi, receiver)
+      .replace(/#\{단말기명\}|\{MODEL\}|\{단말기명\}/gi, sampleModel)
+      .replace(/#\{개통일자\}|\{DATE\}|\{개통일자\}/gi, sampleDate)
+      .replace(/#\{할부원금\}|\{PRICE\}|\{할부원금\}/gi, samplePrice)
+      .replace(/#\{요금제\}|\{PLAN\}|\{요금제\}/gi, '5G 베이직');
+
+    // 예약 발송 파라미터
+    const isReserved = document.getElementById('chkReservation').checked;
+    let rdate = '';
+    let rtime = '';
+    if (isReserved) {
+      rdate = document.getElementById('sendRdate').value.trim();
+      rtime = document.getElementById('sendRtime').value.trim();
+      if (!rdate || !rtime) {
+        alert('예약 발송 일자와 시간을 모두 지정해 주세요.');
+        return;
+      }
+    }
+
+    // 발송 모드 (Y: 테스트, N: 실제)
+    const testmode = document.querySelector('input[name="sendTestmodeRadio"]:checked').value;
+
+    const btn = document.getElementById('btnExecuteSend');
+    const btnText = document.getElementById('btnExecuteSendText');
+    const resultArea = document.getElementById('sendResultFeedbackArea');
+
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Aligo 전송 중...';
+
+    try {
+      const res = await fetch('/api/notifications/sms/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiver,
+          receiverName: sampleName,
+          title,
+          content: finalContent,
+          templateCode,
+          rdate,
+          rtime,
+          testmode
+        })
+      });
+
+      const data = await res.json();
+      resultArea.classList.remove('d-none');
+
+      if (data.success) {
+        resultArea.innerHTML = `
+          <div class="alert alert-success border-0 shadow-sm py-2.5 px-3 mb-0 rounded-3">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <strong class="d-flex align-items-center gap-1.5 text-success">
+                <i class="bi bi-check-circle-fill"></i> 발송 성공 (결과코드: ${data.result_code})
+              </strong>
+              <span class="badge bg-success-subtle text-success border border-success-subtle">${data.msg_type} (${data.byteLength} Byte)</span>
+            </div>
+            <div class="small text-dark mb-1">${data.message || '성공적으로 전송요청 하였습니다.'}</div>
+            <div class="small text-muted font-monospace" style="font-size: 0.73rem;">
+              • 메시지 ID: <strong>${data.msg_id || '-'}</strong> | 수신번호: <strong>${receiver}</strong><br>
+              • 발송 모드: ${data.testmode ? '<span class=\"text-warning-emphasis fw-bold\">테스트모드 (건수 미차감)</span>' : '<span class=\"text-primary fw-bold\">실제 발송 완료</span>'}
+            </div>
+            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+              <span class="small text-secondary">발송 이력 테이블(sms_log)에 기록되었습니다.</span>
+              <a href="/notifications/history" class="btn btn-xs btn-outline-success py-0 px-2 small">이력 확인</a>
+            </div>
+          </div>
+        `;
+        // 잔여량 새로고침
+        checkAligoRemain(true);
+      } else {
+        const isIpError = (data.message && data.message.includes('IP')) || (data.result_code === -101 || data.result_code === '-101');
+        resultArea.innerHTML = `
+          <div class="alert alert-danger border-0 shadow-sm py-2.5 px-3 mb-0 rounded-3">
+            <div class="fw-bold mb-1 d-flex align-items-center gap-1.5 text-danger">
+              <i class="bi bi-exclamation-triangle-fill"></i> 발송 실패 (결과코드: ${data.result_code || '-'})
+            </div>
+            <div class="small text-dark mb-1">${data.message}</div>
+            ${isIpError ? `
+              <div class="p-2 mt-2 bg-white rounded border border-danger-subtle small">
+                <div class="fw-bold text-dark mb-1"><i class="bi bi-shield-exclamation text-danger me-1"></i>해결 방법: 알리고 발송 서버 IP 등록 필요</div>
+                <div class="text-secondary mb-1" style="font-size: 0.72rem;">현재 PC/서버의 공인 IP: <code class="fw-bold text-primary">222.108.71.219</code></div>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2" onclick="navigator.clipboard.writeText('222.108.71.219'); alert('222.108.71.219 가 복사되었습니다.');">
+                    <i class="bi bi-clipboard me-1"></i>IP 복사
+                  </button>
+                  <a href="https://smartsms.aligo.in" target="_blank" class="btn btn-xs btn-outline-dark py-0.5 px-2">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>알리고 관리자 열기
+                  </a>
+                </div>
+              </div>
+            ` : ''}
+            ${data.isSimulated ? `
+              <div class="mt-2 pt-2 border-top">
+                <button type="button" class="btn btn-sm btn-outline-danger py-0.5 px-2 small" data-bs-toggle="modal" data-bs-target="#modalAligoConfig">
+                  <i class="bi bi-gear-fill me-1"></i>Aligo 연동 설정 바로가기
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+    } catch (err) {
+      resultArea.classList.remove('d-none');
+      resultArea.innerHTML = `
+        <div class="alert alert-danger border-0 shadow-sm py-2.5 px-3 mb-0 rounded-3">
+          <div class="fw-bold text-danger mb-1"><i class="bi bi-x-circle-fill me-1"></i> 통신 에러 발생</div>
+          <div class="small text-muted">${err.message}</div>
+        </div>
+      `;
+    } finally {
+      btn.disabled = false;
+      btnText.textContent = 'Aligo 문자 발송 실행';
     }
   }
 
-  function applyFilter() {
-    // 화면 필터링 데모
-    console.log('Filter applied');
+  // ========================================================
+  // 템플릿 상태(USE/HIDE) 토글 (실제 API 연동)
+  // ========================================================
+  async function toggleTemplateUse(id, btn) {
+    try {
+      const res = await fetch(`/api/notifications/templates/${id}/toggle`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        if (data.use_yn === 'Y') {
+          btn.className = 'btn btn-xs btn-success py-0.5 px-2 fw-semibold shadow-xs';
+          btn.textContent = 'USE';
+        } else {
+          btn.className = 'btn btn-xs btn-danger py-0.5 px-2 fw-semibold shadow-xs';
+          btn.textContent = 'HIDE';
+        }
+      } else {
+        alert(data.message || '상태 변경 실패');
+      }
+    } catch (e) {
+      alert('오류 발생: ' + e.message);
+    }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    calculateBytes(document.getElementById('tplContentInput').value);
-  });
+  // 템플릿 삭제
+  async function deleteTemplate(id, name) {
+    if (!confirm(`'${name}' 템플릿을 정말 삭제하시겠습니까?`)) return;
+    try {
+      const res = await fetch(`/api/notifications/templates/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('삭제되었습니다.');
+        location.reload();
+      } else {
+        alert(data.message || '삭제 실패');
+      }
+    } catch (e) {
+      alert('오류 발생: ' + e.message);
+    }
+  }
+
+  // ========================================================
+  // 템플릿 신규 등록 / 수정 모달 제어
+  // ========================================================
+  function openTemplateModal() {
+    document.getElementById('tplModalTitle').innerHTML = '<i class="bi bi-plus-circle-fill text-primary"></i><span>신규 템플릿 등록</span>';
+    document.getElementById('editTplId').value = '';
+    document.getElementById('editTplCode').value = 'SMS_' + Date.now().toString().slice(-6);
+    document.getElementById('editTplName').value = '';
+    document.getElementById('editModalTitleInput').value = '[KT몰] ';
+    document.getElementById('editModalContentInput').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('modalTemplateEdit'));
+    modal.show();
+  }
+
+  function editTemplateModal(id) {
+    const t = templatesData.find(item => item.id === id);
+    if (!t) return;
+    document.getElementById('tplModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i><span>템플릿 속성 수정</span>';
+    document.getElementById('editTplId').value = t.id;
+    document.getElementById('editTplCode').value = t.template_code;
+    document.getElementById('editTplName').value = t.template_name;
+    document.getElementById('editConditionType').value = t.condition_type || 'D_DAY';
+    document.getElementById('editConditionDays').value = t.condition_days || 0;
+    document.getElementById('editSendCycle').value = t.send_cycle || 'REALTIME';
+    document.getElementById('editSendTime').value = t.send_time || '10:00';
+    document.getElementById('editModalTitleInput').value = t.title || '';
+    document.getElementById('editModalContentInput').value = t.content || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalTemplateEdit'));
+    modal.show();
+  }
+
+  async function saveTemplateData(e) {
+    e.preventDefault();
+    const id = document.getElementById('editTplId').value;
+    const template_code = document.getElementById('editTplCode').value.trim();
+    const template_name = document.getElementById('editTplName').value.trim();
+    const condition_type = document.getElementById('editConditionType').value;
+    const condition_days = document.getElementById('editConditionDays').value;
+    const send_cycle = document.getElementById('editSendCycle').value;
+    const send_time = document.getElementById('editSendTime').value.trim();
+    const title = document.getElementById('editModalTitleInput').value.trim();
+    const content = document.getElementById('editModalContentInput').value.trim();
+    const msg_type = calculateBytes(content) > 90 ? 'LMS' : 'SMS';
+
+    const btn = document.getElementById('btnSaveTplModal');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/notifications/templates/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: id || undefined,
+          template_code,
+          template_name,
+          msg_type,
+          condition_type,
+          condition_days,
+          condition_desc: condition_type === 'D_DAY' ? '개통 당일 (D-Day)' : (condition_type === 'AFTER_D' ? `개통 후 D+${condition_days}일` : `약정만료 D-${condition_days}일`),
+          send_cycle,
+          send_cycle_desc: send_cycle === 'REALTIME' ? '실시간 즉시 발송' : (send_cycle === 'DAILY' ? '매일 정기 발송' : '매주 정기 발송'),
+          send_time,
+          title,
+          content
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        location.reload();
+      } else {
+        alert(data.message || '저장 실패');
+      }
+    } catch (err) {
+      alert('오류: ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ========================================================
+  // Aligo 연동 설정 저장 및 잔여량 조회
+  // ========================================================
+  async function saveAligoConfig(e) {
+    e.preventDefault();
+    const apiKey = document.getElementById('cfgApiKey').value.trim();
+    const userId = document.getElementById('cfgUserId').value.trim();
+    const sender = document.getElementById('cfgSender').value.trim();
+    const testmodeYn = document.querySelector('input[name="cfgTestmode"]:checked').value;
+
+    const btn = document.getElementById('btnSaveAligoConfig');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/notifications/sms/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, userId, sender, testmodeYn })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Aligo 연동 설정이 sys_config 에 안전하게 저장되었습니다.');
+        location.reload();
+      } else {
+        alert(data.message || '설정 저장 실패');
+      }
+    } catch (err) {
+      alert('오류: ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function checkAligoRemain(isSilent = false) {
+    try {
+      const res = await fetch('/api/notifications/sms/remain');
+      const data = await res.json();
+      if (data.configured && !data.error) {
+        const text = `SMS: ${Number(data.SMS_CNT || 0).toLocaleString()}건 | LMS: ${Number(data.LMS_CNT || 0).toLocaleString()}건`;
+        const cardDisplay = document.getElementById('cardRemainDisplay');
+        const topBadge = document.getElementById('topRemainBadge');
+        if (cardDisplay) cardDisplay.textContent = text;
+        if (topBadge) topBadge.textContent = text;
+
+        if (!isSilent) {
+          alert(`[Aligo 계정 잔여 건수]\n\n• SMS (단문): ${Number(data.SMS_CNT || 0).toLocaleString()} 건\n• LMS (장문): ${Number(data.LMS_CNT || 0).toLocaleString()} 건\n• MMS (그림): ${Number(data.MMS_CNT || 0).toLocaleString()} 건`);
+        }
+      } else {
+        if (!isSilent) alert(data.message || 'Aligo 연동 정보를 확인해 주세요.');
+      }
+    } catch (e) {
+      if (!isSilent) alert('잔여 건수 조회 오류: ' + e.message);
+    }
+  }
 </script>
 
 <%- include('partials/footer') %>
-

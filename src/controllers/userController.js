@@ -46,7 +46,7 @@ const userController = {
   },
 
   /**
-   * 엑셀 파일 업로드 및 Bulk UPSERT 처리 (보안 인젝션 검사 및 트랜잭션 롤백, 에러 로깅 연동)
+   * 엑셀 파일 업로드 및 Bulk INSERT 처리 (보안 인젝션 검사 및 트랜잭션 롤백, 에러 로깅 연동)
    */
   async uploadExcel(req, res) {
     if (!req.file) {
@@ -59,13 +59,39 @@ const userController = {
 
     try {
       // 1. 엑셀 파일 파싱 및 데이터 전처리
-      const { users, totalRows, errors } = parseUserExcel(filePath);
+      const parseResult = parseUserExcel(filePath);
 
-      if (users.length === 0) {
+      if (parseResult.formatMismatch) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         return res.status(400).json({
           success: false,
-          message: '유효한 회원 데이터 행을 찾을 수 없습니다. (고객 고유번호 un 확인 필요)'
+          formatMismatch: true,
+          errorType: 'FORMAT_MISMATCH',
+          detectedType: parseResult.detectedType,
+          detectedName: parseResult.detectedName,
+          expectedType: parseResult.expectedType,
+          expectedName: parseResult.expectedName,
+          title: '엑셀 파일 포맷 불일치',
+          message: parseResult.message,
+          suggestion: parseResult.suggestion,
+          detectedHeaders: parseResult.detectedHeaders || [],
+          expectedColumns: parseResult.expectedColumns || []
+        });
+      }
+
+      const { users, totalRows, errors } = parseResult;
+
+      if (!users || users.length === 0) {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        return res.status(400).json({
+          success: false,
+          formatMismatch: true,
+          errorType: 'EMPTY_OR_INVALID',
+          title: '회원 데이터 없음',
+          message: '유효한 회원 데이터 행을 찾을 수 없습니다. (고객 고유번호 un 확인 필요)',
+          suggestion: '회원 엑셀 1열에 고객 고유번호(숫자)와 2열에 회원 이름이 입력되어 있는지 확인해 주세요.',
+          detectedHeaders: parseResult.detectedHeaders || [],
+          expectedColumns: ['1열: 고객고유번호 (un)', '2열: 이름 (nm)', '5열: 휴대폰번호 (phone)']
         });
       }
 
@@ -149,6 +175,52 @@ const userController = {
         success: false,
         message: '해당 과정에서 문제가 발생했습니다. 관리자에게 문의해 주세요.'
       });
+    }
+  },
+
+  /**
+   * 단건 회원 상세 조회
+   */
+  async getUserDetail(req, res) {
+    try {
+      const { un } = req.params;
+      const user = await UserModel.findByUn(un);
+      if (!user) {
+        return res.status(404).json({ success: false, message: '회원 정보를 찾을 수 없습니다.' });
+      }
+      return res.json({ success: true, user });
+    } catch (err) {
+      console.error('회원 상세 조회 오류:', err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * 단건 회원 정보 수정
+   */
+  async updateUser(req, res) {
+    try {
+      const { un } = req.params;
+      const { nm, birth_dt, phone, point, memo, approval_yn, status } = req.body;
+
+      if (!nm || !nm.trim()) {
+        return res.status(400).json({ success: false, message: '회원 이름은 필수입니다.' });
+      }
+
+      await UserModel.updateUser(un, {
+        nm: nm.trim(),
+        birth_dt: birth_dt || null,
+        phone: phone || null,
+        point: parseInt(point, 10) || 0,
+        memo: memo || null,
+        approval_yn: approval_yn || 'Y',
+        status: status === 'O' ? 'O' : 'I'
+      });
+
+      return res.json({ success: true, message: `회원 [${nm}](고유번호: ${un}) 정보가 성공적으로 수정되었습니다.` });
+    } catch (err) {
+      console.error('회원 수정 오류:', err);
+      return res.status(500).json({ success: false, message: '회원 정보 수정 실패: ' + err.message });
     }
   },
 

@@ -274,6 +274,23 @@ const systemController = {
       console.error('detectPublicIp error:', err);
       return res.status(500).json({ success: false, message: '공인 IP 감지 중 오류: ' + err.message });
     }
+  },
+
+  /**
+   * 5. 초경량 데이터 변경 감지 버전 체크 API
+   */
+  async checkDataVersion(req, res) {
+    try {
+      const page = req.query.page || 'dashboard';
+      const versionData = await SystemModel.checkDataVersion(page);
+      return res.json({
+        success: true,
+        page,
+        ...versionData
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
   }
 };
 

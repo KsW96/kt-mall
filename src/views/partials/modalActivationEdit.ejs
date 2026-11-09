@@ -1,0 +1,951 @@
+<!-- ======================================================== -->
+<!-- MODAL: 통신사 개통 이력 80개 전체 상세 조회 및 수정 (activation_log) -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalActivationEdit" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <form id="formActivationEdit">
+        <input type="hidden" id="editActId" name="id">
+
+        <div class="modal-header bg-light py-2.5 px-4 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h5 class="modal-title fw-bold fs-6 text-dark d-flex align-items-center gap-2 mb-0">
+              <i class="bi bi-phone-fill text-success fs-5"></i>
+              <span>개통 이력 상세 및 수정 (80개 컬럼)</span>
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary border font-monospace" id="badgeActId">ID: -</span>
+            <span class="badge bg-primary-subtle text-primary border" id="badgeActCustNm">고객명: -</span>
+            <span class="badge bg-light text-dark border font-monospace" id="badgeActPhone">개통번호: -</span>
+            <span class="badge bg-success-subtle text-success border" id="badgeActOpeningDt">개통일: -</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="width: 200px;">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 ps-0" id="actFieldQuickFilter" placeholder="필드명 검색..." oninput="filterActivationModalFields(this.value)">
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+        </div>
+
+        <div class="modal-body p-4">
+          <!-- 상단 알림 영역 -->
+          <div id="actEditAlert" class="alert d-none py-2 px-3 small mb-3"></div>
+
+          <!-- 연결 회원 바로가기 뱃지 (회원개통이력 조인 시 노출) -->
+          <div id="actLinkedUserBox" class="alert alert-primary-subtle border border-primary-subtle py-2 px-3 small mb-3 d-none d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <i class="bi bi-person-check-fill text-primary me-1"></i>
+              <span>일치 회원 정보: <strong id="linkedUserNm" class="text-dark">-</strong> (고유번호 un: <code id="linkedUserUn">-</code>, 생년월일: <span id="linkedUserBirth">-</span>)</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary py-0.5 px-2.5" id="btnOpenLinkedUserModal" style="font-size: 0.78rem;">
+              <i class="bi bi-person-lines-fill me-1"></i>회원 정보 상세/수정 바로가기
+            </button>
+          </div>
+
+          <!-- 5개 카테고리 탭 네비게이션 -->
+          <ul class="nav nav-pills nav-fill bg-light p-1.5 rounded-3 mb-3 small fw-semibold" id="actTabNav" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active py-2" id="tab-act-cust-tab" data-bs-toggle="pill" data-bs-target="#tab-act-cust" type="button" role="tab">
+                <i class="bi bi-person-circle me-1 text-primary"></i>1. 고객 & 기본 <span class="badge bg-primary-subtle text-primary ms-1">16</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2" id="tab-act-device-tab" data-bs-toggle="pill" data-bs-target="#tab-act-device" type="button" role="tab">
+                <i class="bi bi-phone me-1 text-success"></i>2. 단말기 & USIM <span class="badge bg-success-subtle text-success ms-1">14</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2" id="tab-act-plan-tab" data-bs-toggle="pill" data-bs-target="#tab-act-plan" type="button" role="tab">
+                <i class="bi bi-file-text me-1 text-info"></i>3. 개통 & 요금제 <span class="badge bg-info-subtle text-info ms-1">17</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2" id="tab-act-price-tab" data-bs-toggle="pill" data-bs-target="#tab-act-price" type="button" role="tab">
+                <i class="bi bi-coin me-1 text-warning"></i>4. 금액 & 할부 <span class="badge bg-warning-subtle text-warning ms-1">17</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2" id="tab-act-seller-tab" data-bs-toggle="pill" data-bs-target="#tab-act-seller" type="button" role="tab">
+                <i class="bi bi-shop me-1 text-secondary"></i>5. 판매처 & 비고 <span class="badge bg-secondary-subtle text-secondary ms-1">16</span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- 탭 컨텐츠 (80개 컬럼 전체) -->
+          <div class="tab-content pt-1" id="actTabContent">
+
+            <!-- ============================================== -->
+            <!-- 탭 1: 고객 & 기본 정보 (16개 필드)              -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade show active" id="tab-act-cust" role="tabpanel">
+              <div class="row g-2.5">
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="고객명 cust_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    고객명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(cust_nm)</span> <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm fw-semibold" id="act_cust_nm" name="cust_nm" required placeholder="고객명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="개통번호 phone_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    개통번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(phone_num)</span> <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_phone_num" name="phone_num" required placeholder="010-0000-0000">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="생년월일 birth_dt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    생년월일 6자리 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(birth_dt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_birth_dt" name="birth_dt" maxlength="6" placeholder="예: 850512">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="관리코드 mgmt_cd">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    관리코드 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(mgmt_cd)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_mgmt_cd" name="mgmt_cd" placeholder="관리코드">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="사업자번호 biz_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    사업자번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(biz_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_biz_num" name="biz_num" placeholder="사업자번호">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="고객아이디 cust_id">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    고객아이디 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(cust_id)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_cust_id" name="cust_id" placeholder="고객아이디">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="고객유형 cust_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    고객유형 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(cust_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_cust_type" name="cust_type" placeholder="개인/법인 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="고객등급 cust_grade">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    고객등급 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(cust_grade)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_cust_grade" name="cust_grade" placeholder="고객등급">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="청구계정번호 billing_account_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    청구계정번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(billing_account_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_billing_account_num" name="billing_account_num" placeholder="청구계정번호">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="개통처리자 opening_manager_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    개통처리자 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(opening_manager_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_opening_manager_nm" name="opening_manager_nm" placeholder="개통처리자 이름">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="처리자 processor_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    처리자 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(processor_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_processor_nm" name="processor_nm" placeholder="처리자 이름">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="수집경로 collection_path">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    수집경로 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(collection_path)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_collection_path" name="collection_path" placeholder="온라인/오프라인 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="자동/수동 auto_manual_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    자동/수동 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(auto_manual_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_auto_manual_type" name="auto_manual_type" placeholder="자동/수동">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="검증결과 verify_result">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    검증결과 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(verify_result)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_verify_result" name="verify_result" placeholder="정상/오류 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="서식지등록일 form_reg_dt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    서식지등록일 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(form_reg_dt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_form_reg_dt" name="form_reg_dt" placeholder="YYYY-MM-DD">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="엑셀 번호 excel_no">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    엑셀 원본 번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(excel_no)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="act_excel_no" name="excel_no" placeholder="엑셀 행 번호">
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- 탭 2: 단말기 & USIM 정보 (14개 필드)            -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="tab-act-device" role="tabpanel">
+              <div class="row g-2.5">
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="단말기 모델명 model_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    단말기 모델명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(model_nm)</span> <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm fw-semibold" id="act_model_nm" name="model_nm" required placeholder="예: SM-S928N">
+                </div>
+
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="단말기 일련번호 serial_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    단말기 일련번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(serial_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_serial_num" name="serial_num" placeholder="일련번호">
+                </div>
+
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="단말기 색상 color">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    색상 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(color)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_color" name="color" placeholder="예: 팬텀 블랙">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="제품구분 prod_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    단말기 제품구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(prod_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_prod_type" name="prod_type" placeholder="LTE/5G 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="재고타입 stock_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    재고타입 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(stock_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_stock_type" name="stock_type" placeholder="재고타입">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="재고구분 stock_category">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    재고구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(stock_category)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_stock_category" name="stock_category" placeholder="재고구분">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="재고이동 stock_move">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    재고이동 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(stock_move)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_stock_move" name="stock_move" placeholder="재고이동 내역">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="USIM 모델명 usim_model_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    USIM 모델명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(usim_model_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_usim_model_nm" name="usim_model_nm" placeholder="USIM 모델명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="USIM 일련번호 usim_serial_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    USIM 일련번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(usim_serial_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_usim_serial_num" name="usim_serial_num" placeholder="USIM 일련번호">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="USIM 제품구분 usim_prod_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    USIM 제품구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(usim_prod_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_usim_prod_type" name="usim_prod_type" placeholder="NFC/일반 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="악세서리 accessory">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    악세서리 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(accessory)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_accessory" name="accessory" placeholder="동봉 악세서리">
+                </div>
+
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="반납구분 return_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    반납구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(return_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_return_type" name="return_type" placeholder="반납구분">
+                </div>
+
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="반납모델 return_model_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    반납모델명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(return_model_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_return_model_nm" name="return_model_nm" placeholder="반납 모델">
+                </div>
+
+                <div class="col-md-4 col-sm-6 act-field-item" data-field-name="반납일련번호 return_serial_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    반납일련번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(return_serial_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_return_serial_num" name="return_serial_num" placeholder="반납 일련번호">
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- 탭 3: 개통 & 요금제 & 약정 (17개 필드)          -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="tab-act-plan" role="tabpanel">
+              <div class="row g-2.5">
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="개통일 opening_dt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    개통일자 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(opening_dt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_opening_dt" name="opening_dt" placeholder="YYYY-MM-DD">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="가입유형 join_category">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    가입유형 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(join_category)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_join_category" name="join_category" placeholder="신규/기변/번호이동 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="가입구분 join_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    가입구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(join_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_join_type" name="join_type" placeholder="일반/선불/후불 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="요금제 plan_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    요금제명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(plan_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_plan_nm" name="plan_nm" placeholder="요금제명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="선불폰여부 prepaid_yn">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    선불폰여부 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(prepaid_yn)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_prepaid_yn" name="prepaid_yn" placeholder="Y / N">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="MNP유형 mnp_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    MNP유형 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(mnp_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_mnp_type" name="mnp_type" placeholder="MNP유형">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="약정기간 contract_period">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    약정기간 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(contract_period)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_contract_period" name="contract_period" placeholder="24개월 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="약정 개월 contract_months">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    약정 개월수 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(contract_months)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_contract_months" name="contract_months" placeholder="24">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="약정할인 contract_discount">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    약정할인 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(contract_discount)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_contract_discount" name="contract_discount" placeholder="선택약정/공시지원 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="약정할인금액 discount_amt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    약정할인금액 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(discount_amt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_discount_amt" name="discount_amt" placeholder="할인금액">
+                </div>
+
+                <div class="col-md-6 col-sm-12 act-field-item" data-field-name="판매약정옵션 agreement_opt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매약정옵션 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(agreement_opt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_agreement_opt" name="agreement_opt" placeholder="판매약정옵션">
+                </div>
+
+                <div class="col-md-6 col-sm-12 act-field-item" data-field-name="부가서비스 extra_services">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    부가서비스 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(extra_services)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_extra_services" name="extra_services" placeholder="가입 부가서비스">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="결합상품 combined_prod">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    결합상품 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(combined_prod)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_combined_prod" name="combined_prod" placeholder="결합상품명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="스폰서 sponsor">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    스폰서 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(sponsor)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_sponsor" name="sponsor" placeholder="스폰서 정보">
+                </div>
+
+                <div class="col-md-2 col-sm-4 act-field-item" data-field-name="구독여부 sub_yn">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    구독여부 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(sub_yn)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_sub_yn" name="sub_yn" placeholder="Y / N">
+                </div>
+
+                <div class="col-md-2 col-sm-4 act-field-item" data-field-name="유치카드 attract_card">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    유치카드 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(attract_card)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_attract_card" name="attract_card" placeholder="제휴카드">
+                </div>
+
+                <div class="col-md-2 col-sm-4 act-field-item" data-field-name="YT세대 yt_generation">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    YT세대 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(yt_generation)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_yt_generation" name="yt_generation" placeholder="세대구분">
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- 탭 4: 금액 & 할부 & 정산 (17개 필드)            -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="tab-act-price" role="tabpanel">
+              <div class="row g-2.5">
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="할부원금 installment_principal">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    할부원금 (원) <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(installment_principal)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary" id="act_installment_principal" name="installment_principal" placeholder="할부원금">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="할부기간 installment_period">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    할부기간 (개월) <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(installment_period)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_installment_period" name="installment_period" placeholder="예: 24개월">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="월 분납금 monthly_installment">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    월 분납금 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(monthly_installment)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_monthly_installment" name="monthly_installment" placeholder="월 분납금">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="선납금 prepayment">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    선납금 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(prepayment)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_prepayment" name="prepayment" placeholder="선납금">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="출고가 factory_price">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    출고가 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(factory_price)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_factory_price" name="factory_price" placeholder="출고가">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="부가세 vat">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    부가세 VAT <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(vat)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_vat" name="vat" placeholder="부가세">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="출고가(VAT별도) factory_price_novat">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    출고가(VAT별도) <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(factory_price_novat)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_factory_price_novat" name="factory_price_novat" placeholder="출고가(VAT제외)">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="공통지원금 common_subsidy">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    공통지원금 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(common_subsidy)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_common_subsidy" name="common_subsidy" placeholder="공통지원금">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="추가지원금 add_subsidy">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    추가지원금 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(add_subsidy)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_add_subsidy" name="add_subsidy" placeholder="추가지원금">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="가입비 join_fee">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    가입비 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(join_fee)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_join_fee" name="join_fee" placeholder="가입비">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="채권료 bond_fee">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    채권료 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(bond_fee)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_bond_fee" name="bond_fee" placeholder="채권료">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="채권료 결제구분 bond_fee_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    채권료 결제구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(bond_fee_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_bond_fee_type" name="bond_fee_type" placeholder="채권료 구분">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="사용기간 usage_period">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    사용기간 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(usage_period)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_usage_period" name="usage_period" placeholder="사용기간">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="사용금액 usage_amt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    사용금액 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(usage_amt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_usage_amt" name="usage_amt" placeholder="사용금액">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="결제구분 pay_type">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    결제구분 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(pay_type)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_pay_type" name="pay_type" placeholder="카드/현금 등">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="결제금액 pay_amt">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    결제금액 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(pay_amt)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_pay_amt" name="pay_amt" placeholder="결제금액">
+                </div>
+
+                <div class="col-md-6 col-sm-12 act-field-item" data-field-name="요금청구 fee_billing">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    요금청구 방식 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(fee_billing)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_fee_billing" name="fee_billing" placeholder="요금청구 방식">
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- 탭 5: 판매처 & 서류 & 비고 (16개 필드)          -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="tab-act-seller" role="tabpanel">
+              <div class="row g-2.5">
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="대리점코드 agency_cd">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    대리점코드 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(agency_cd)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_agency_cd" name="agency_cd" placeholder="대리점코드">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="판매처실명 seller_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매처실명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(seller_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_seller_nm" name="seller_nm" placeholder="판매처실명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="판매처애칭 seller_nick_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매처애칭 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(seller_nick_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_seller_nick_nm" name="seller_nick_nm" placeholder="판매처애칭">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="판매처코드 seller_cd">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매처코드 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(seller_cd)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_seller_cd" name="seller_cd" placeholder="판매처코드">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="판매자 seller_user_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매자 이름 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(seller_user_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_seller_user_nm" name="seller_user_nm" placeholder="판매자 이름">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="개통처 opening_store_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    개통처 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(opening_store_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_opening_store_nm" name="opening_store_nm" placeholder="개통처">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="입고처 receiving_store_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    입고처 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(receiving_store_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_receiving_store_nm" name="receiving_store_nm" placeholder="입고처">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="보유처실명 holder_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    보유처실명 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(holder_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_holder_nm" name="holder_nm" placeholder="보유처실명">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="보유처애칭 holder_nick_nm">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    보유처애칭 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(holder_nick_nm)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_holder_nick_nm" name="holder_nick_nm" placeholder="보유처애칭">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="보유처그룹 holder_group">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    보유처그룹 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(holder_group)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_holder_group" name="holder_group" placeholder="보유처그룹">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="삼차점 tertiary_store">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    삼차점 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(tertiary_store)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_tertiary_store" name="tertiary_store" placeholder="삼차점">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="판매번호 sales_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    판매번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(sales_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_sales_num" name="sales_num" placeholder="판매번호">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="서류번호 doc_num">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    서류번호 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(doc_num)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="act_doc_num" name="doc_num" placeholder="서류번호">
+                </div>
+
+                <div class="col-md-3 col-sm-6 act-field-item" data-field-name="미비서류 missing_docs">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    미비서류 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(missing_docs)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="act_missing_docs" name="missing_docs" placeholder="미비서류 내역">
+                </div>
+
+                <div class="col-md-6 col-sm-12 act-field-item" data-field-name="비고1 remark1">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    비고 1 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(remark1)</span>
+                  </label>
+                  <textarea class="form-control form-control-sm" id="act_remark1" name="remark1" rows="2" placeholder="비고 1 메모"></textarea>
+                </div>
+
+                <div class="col-md-6 col-sm-12 act-field-item" data-field-name="비고2 remark2">
+                  <label class="form-label small fw-semibold text-secondary mb-1">
+                    비고 2 <span class="text-muted fw-normal font-monospace" style="font-size:0.72rem;">(remark2)</span>
+                  </label>
+                  <textarea class="form-control form-control-sm" id="act_remark2" name="remark2" rows="2" placeholder="비고 2 메모"></textarea>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between align-items-center">
+          <div class="small text-muted">
+            <i class="bi bi-info-circle me-1 text-primary"></i>통신사 80개 원본 컬럼 중 수정할 필드를 입력 후 저장을 누르면 DB에 즉시 반영됩니다.
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">닫기</button>
+            <button type="submit" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnSaveActivation">
+              <i class="bi bi-check-lg me-1"></i>수정 내용 저장
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 80개 컬럼 전체 필드명 목록 (JS 동적 바인딩용)
+  const ALL_80_FIELD_NAMES = [
+    'excel_no', 'mgmt_cd', 'opening_dt', 'model_nm', 'serial_num', 'prod_type',
+    'factory_price', 'vat', 'factory_price_novat', 'opening_manager_nm',
+    'cust_nm', 'phone_num', 'color', 'birth_dt', 'biz_num',
+    'holder_group', 'holder_nick_nm', 'holder_nm', 'seller_nick_nm', 'seller_nm',
+    'sales_num', 'seller_cd', 'stock_move', 'seller_user_nm', 'receiving_store_nm',
+    'opening_store_nm', 'join_type', 'join_category', 'prepaid_yn', 'mnp_type',
+    'processor_nm', 'join_fee', 'installment_period', 'yt_generation', 'agency_cd',
+    'tertiary_store', 'cust_grade', 'discount_amt', 'sponsor', 'contract_months',
+    'bond_fee', 'bond_fee_type', 'monthly_installment', 'prepayment', 'usage_period',
+    'usage_amt', 'installment_principal', 'fee_billing', 'contract_discount', 'plan_nm',
+    'extra_services', 'return_type', 'return_model_nm', 'return_serial_num', 'doc_num',
+    'missing_docs', 'combined_prod', 'cust_id', 'cust_type', 'contract_period',
+    'attract_card', 'usim_model_nm', 'usim_prod_type', 'stock_type', 'usim_serial_num',
+    'pay_type', 'pay_amt', 'remark1', 'remark2', 'sub_yn',
+    'billing_account_num', 'verify_result', 'auto_manual_type', 'accessory', 'form_reg_dt',
+    'collection_path', 'common_subsidy', 'add_subsidy', 'agreement_opt', 'stock_category'
+  ];
+
+  // 모달 내부 80개 필드 실시간 검색 필터
+  function filterActivationModalFields(query) {
+    const q = (query || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.act-field-item');
+    items.forEach(el => {
+      const fieldData = (el.dataset.fieldName || '').toLowerCase();
+      if (!q || fieldData.includes(q)) {
+        el.classList.remove('d-none');
+        if (q) {
+          el.style.backgroundColor = '#fffbeb';
+          el.style.borderRadius = '6px';
+        } else {
+          el.style.backgroundColor = '';
+        }
+      } else {
+        el.classList.add('d-none');
+        el.style.backgroundColor = '';
+      }
+    });
+
+    // 검색어 입력 시, 일치 항목이 있는 탭을 자동으로 찾아 활성화
+    if (q) {
+      const activeTabContent = document.querySelector('#actTabContent .tab-pane.active');
+      const visibleInActive = activeTabContent ? activeTabContent.querySelectorAll('.act-field-item:not(.d-none)').length : 0;
+      if (visibleInActive === 0) {
+        // 일치 항목이 있는 첫 번째 탭 찾기
+        for (const pane of document.querySelectorAll('#actTabContent .tab-pane')) {
+          if (pane.querySelectorAll('.act-field-item:not(.d-none)').length > 0) {
+            const triggerBtn = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+            if (triggerBtn && window.bootstrap && bootstrap.Tab) {
+              bootstrap.Tab.getOrCreateInstance(triggerBtn).show();
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 안전한 모달 열기 함수 (Bootstrap 및 Pure JS 폴백 지원)
+  function showActivationModalSafe(el) {
+    if (!el) return;
+    if (el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
+    if (window.bootstrap && bootstrap.Modal) {
+      try {
+        const instance = bootstrap.Modal.getOrCreateInstance(el);
+        if (instance) {
+          instance.show();
+          return;
+        }
+      } catch (e) {
+        try {
+          new bootstrap.Modal(el).show();
+          return;
+        } catch (e2) {}
+      }
+    }
+    // Pure JS fallback
+    el.classList.add('show');
+    el.style.display = 'block';
+    el.setAttribute('aria-modal', 'true');
+    el.removeAttribute('aria-hidden');
+    document.body.classList.add('modal-open');
+    let backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      document.body.appendChild(backdrop);
+      backdrop.onclick = () => hideActivationModalSafe(el);
+    }
+  }
+
+  // 안전한 모달 닫기 함수
+  function hideActivationModalSafe(el) {
+    if (!el) return;
+    if (window.bootstrap && bootstrap.Modal) {
+      try {
+        const instance = bootstrap.Modal.getInstance(el);
+        if (instance) {
+          instance.hide();
+          return;
+        }
+      } catch (e) {}
+    }
+    el.classList.remove('show');
+    el.style.display = 'none';
+    el.setAttribute('aria-hidden', 'true');
+    el.removeAttribute('aria-modal');
+    document.body.classList.remove('modal-open');
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+  }
+
+  // 개통 상세/수정 모달 열기
+  async function openActivationEditModal(id, event, linkedUserData) {
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+
+    const modalEl = document.getElementById('modalActivationEdit');
+    if (!modalEl) {
+      alert('개통 상세 모달 요소를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 닫기 버튼들에 폴백 이벤트 바인딩
+    modalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+      btn.onclick = () => hideActivationModalSafe(modalEl);
+    });
+
+    // 폼 초기화
+    document.getElementById('formActivationEdit').reset();
+    document.getElementById('editActId').value = id;
+    document.getElementById('actFieldQuickFilter').value = '';
+    filterActivationModalFields('');
+
+    // 헤더 뱃지 초기화
+    document.getElementById('badgeActId').textContent = `ID: ${id}`;
+    document.getElementById('badgeActCustNm').textContent = '고객명: 로딩중...';
+    document.getElementById('badgeActPhone').textContent = '개통번호: -';
+    document.getElementById('badgeActOpeningDt').textContent = '개통일: -';
+
+    // 로딩 알림 표시 후 모달 즉시 오픈! (클릭 시각 피드백 보장)
+    const alertBox = document.getElementById('actEditAlert');
+    alertBox.className = 'alert alert-info py-2 px-3 small mb-3';
+    alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 80개 상세 개통 데이터를 불러오는 중입니다...';
+    alertBox.classList.remove('d-none');
+    showActivationModalSafe(modalEl);
+
+    // 연결 회원 정보 처리
+    const linkedUserBox = document.getElementById('actLinkedUserBox');
+    if (linkedUserData && linkedUserData.un) {
+      linkedUserBox.classList.remove('d-none');
+      document.getElementById('linkedUserNm').textContent = linkedUserData.nm || '-';
+      document.getElementById('linkedUserUn').textContent = linkedUserData.un || '-';
+      document.getElementById('linkedUserBirth').textContent = linkedUserData.birth_dt || '-';
+      const btnLink = document.getElementById('btnOpenLinkedUserModal');
+      btnLink.onclick = () => {
+        hideActivationModalSafe(modalEl);
+        setTimeout(() => {
+          if (typeof openUserEditModal === 'function') {
+            openUserEditModal(linkedUserData.un);
+          }
+        }, 200);
+      };
+    } else {
+      linkedUserBox.classList.add('d-none');
+    }
+
+    // 1번 탭으로 초기화
+    const firstTabBtn = document.getElementById('tab-act-cust-tab');
+    if (firstTabBtn && window.bootstrap && bootstrap.Tab) {
+      bootstrap.Tab.getOrCreateInstance(firstTabBtn).show();
+    }
+
+    try {
+      const res = await fetch(`/api/activations/${id}`);
+      const data = await res.json();
+
+      if (data.success && data.activation) {
+        const act = data.activation;
+
+        // 상단 뱃지 갱신
+        document.getElementById('badgeActCustNm').textContent = `고객명: ${act.cust_nm || '-'}`;
+        document.getElementById('badgeActPhone').textContent = `개통번호: ${act.phone_num || '-'}`;
+        document.getElementById('badgeActOpeningDt').textContent = `개통일: ${act.opening_dt || '-'}`;
+
+        // 80개 필드 일괄 매핑
+        ALL_80_FIELD_NAMES.forEach(f => {
+          const input = document.getElementById(`act_${f}`);
+          if (input) {
+            input.value = (act[f] !== null && act[f] !== undefined) ? act[f] : '';
+          }
+        });
+
+        alertBox.classList.add('d-none');
+      } else {
+        alertBox.className = 'alert alert-danger py-2 px-3 small mb-3';
+        alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> 데이터를 불러오지 못했습니다: ${data.message || '데이터 없음'}`;
+      }
+    } catch (err) {
+      alertBox.className = 'alert alert-danger py-2 px-3 small mb-3';
+      alertBox.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> 통신 에러: ${err.message}`;
+    }
+  }
+
+  // 개통 정보 수정 폼 비동기 전송
+  const formActivationEditEl = document.getElementById('formActivationEdit');
+  if (formActivationEditEl) {
+    formActivationEditEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editActId').value;
+      const btn = document.getElementById('btnSaveActivation');
+      const alertBox = document.getElementById('actEditAlert');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 저장 중...';
+
+      const updateData = {};
+      ALL_80_FIELD_NAMES.forEach(f => {
+        const input = document.getElementById(`act_${f}`);
+        if (input) {
+          updateData[f] = input.value.trim();
+        }
+      });
+
+      try {
+        const res = await fetch(`/api/activations/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          alertBox.className = 'alert alert-success py-2 px-3 small mb-3';
+          alertBox.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${result.message}`;
+          alertBox.classList.remove('d-none');
+          setTimeout(() => location.reload(), 600);
+        } else {
+          alertBox.className = 'alert alert-danger py-2 px-3 small mb-3';
+          alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> ${result.message}`;
+          alertBox.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>수정 내용 저장';
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger py-2 px-3 small mb-3';
+        alertBox.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> 통신 에러: ${err.message}`;
+        alertBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>수정 내용 저장';
+      }
+    });
+  }
+</script>
+

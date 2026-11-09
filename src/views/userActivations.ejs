@@ -6,7 +6,7 @@
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
       <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-        <h1 class="h3 fw-bold mb-0">회원 개통 이력</h1>
+        <h1 class="h3 fw-bold mb-0"><%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_name) ? currentMenu.menu_name : '어플 회원 개통 이력' %></h1>
         <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2.5 py-1.5 font-monospace">
           <i class="bi bi-clock-history me-1"></i>개통 최신 업로드 일자: <strong><%= stats.lastUploadDt || stats.openLastUpload || '-' %></strong>
         </span>
@@ -158,8 +158,11 @@
         <span>개통 최신 업로드: <strong class="text-success font-monospace"><%= stats.lastUploadDt || stats.openLastUpload || '-' %></strong></span>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <label class="small text-muted mb-0">표시 개수:</label>
-          <select class="form-select form-select-sm" style="width: auto;" onchange="changeLimit(this.value)">
+        <span class="badge bg-light text-secondary border">
+          <i class="bi bi-cursor-fill text-primary me-1"></i>행(Row)을 클릭하면 개통 및 회원 전체 상세 수정이 가능합니다.
+        </span>
+        <label class="small text-muted mb-0 ms-1">표시 개수:</label>
+        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLimit(this.value)">
             <option value="20" <%= pagination.limit === 20 ? 'selected' : '' %>>20개씩</option>
             <option value="30" <%= pagination.limit === 30 ? 'selected' : '' %>>30개씩</option>
             <option value="40" <%= pagination.limit === 40 ? 'selected' : '' %>>40개씩</option>
@@ -171,20 +174,21 @@
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 user-table user-activations-table-min">
+        <table class="table table-hover align-middle mb-0 user-table no-scroll-table">
           <colgroup>
-            <col class="col-w-no">
-            <col class="col-w-name">
-            <col class="col-w-birth">
-            <col class="col-w-phone">
-            <col class="col-w-join-category">
-            <col class="col-w-opening-dt">
-            <col class="col-w-model">
-            <col class="col-w-color">
-            <col class="col-w-plan">
-            <col class="col-w-period">
-            <col class="col-w-option">
-            <col class="col-w-principal">
+            <col style="width: 3.5%;">
+            <col style="width: 7.5%;">
+            <col style="width: 6.5%;">
+            <col style="width: 10.5%;">
+            <col style="width: 7%;">
+            <col style="width: 8.5%;">
+            <col style="width: 14.5%;">
+            <col style="width: 6.5%;">
+            <col style="width: 11%;">
+            <col style="width: 6.5%;">
+            <col style="width: 6%;">
+            <col style="width: 7.5%;">
+            <col style="width: 4.5%;">
           </colgroup>
           <thead class="table-light">
             <tr>
@@ -200,20 +204,28 @@
               <th scope="col" class="text-center col-w-period">할부기간</th>
               <th scope="col" class="text-start col-w-option">약정옵션</th>
               <th scope="col" class="text-end col-w-principal">할부원금</th>
+              <th scope="col" class="text-center col-w-action">관리</th>
             </tr>
           </thead>
           <tbody>
             <% if (items && items.length > 0) { %>
               <% items.forEach((row, idx) => { %>
-                <tr>
+                <tr class="clickable-row join-row-item"
+                    data-activation-id="<%= row.activation_id %>"
+                    data-user-un="<%= row.user_un %>"
+                    data-user-nm="<%= row.cust_nm || row.user_nm || '' %>"
+                    data-birth="<%= row.birth_dt || '' %>"
+                    onclick="handleJoinRowClick(this, event)">
                   <!-- 1. No -->
                   <td class="text-center text-muted small col-w-no">
                     <%= (pagination.page - 1) * pagination.limit + (idx + 1) %>
                   </td>
 
-                  <!-- 2. 고객명 (원본 이름 표출) -->
+                  <!-- 2. 고객명 (클릭 시 회원 상세 팝업 오픈) -->
                   <td class="text-center col-w-name">
-                    <span class="fw-semibold text-dark"><%= row.cust_nm || row.user_nm || row.raw_name || '-' %></span>
+                    <span class="fw-semibold text-primary text-decoration-underline" onclick="openUserEditModal(<%= row.user_un %>, event)" title="회원 상세 정보 및 수정 (클릭)">
+                      <%= row.cust_nm || row.user_nm || row.raw_name || '-' %>
+                    </span>
                   </td>
 
                   <!-- 3. 생년월일 (YYMMDD) -->
@@ -269,11 +281,23 @@
                   <td class="text-end fw-bold text-primary col-w-principal" title="할부원금: <%= (row.installment_principal_num || 0).toLocaleString() %>원">
                     <%= (row.installment_principal_num || 0).toLocaleString() %><span class="text-primary-emphasis ms-1" style="font-size: 0.78rem;">원</span>
                   </td>
+
+                  <!-- 13. 관리 열 (개통 상세 및 회원 상세 선택) -->
+                  <td class="text-center col-w-action" onclick="event.stopPropagation()">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-primary py-0 px-2" title="개통 80개 컬럼 전체 상세 및 수정" onclick="handleJoinRowClick(this.closest('tr'), event)">
+                        <i class="bi bi-phone"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-info py-0 px-2" title="회원 정보 상세 및 수정" onclick="openUserEditModal(<%= row.user_un %>, event)">
+                        <i class="bi bi-person"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="12" class="text-center py-5 text-muted">
+                <td colspan="13" class="text-center py-5 text-muted">
                   <i class="bi bi-link-45deg fs-2 d-block mb-2 text-secondary"></i>
                   회원 정보와 개통 이력이 [생년월일] 및 [전화번호] 기준으로 일치하는 조인 데이터가 없습니다.<br>
                   <span class="small text-secondary mt-1 d-inline-block">
@@ -300,7 +324,25 @@
   </div>
 </main>
 
+<!-- 개통 이력 80개 컬럼 전체 상세/수정 모달 및 회원 상세/수정 모달 인클루드 -->
+<%- include('partials/modalActivationEdit') %>
+<%- include('partials/modalUserEdit') %>
+
 <script>
+  // 회원-개통 결합 행 클릭 시 개통 이력 80개 상세/수정 모달 오픈 (연결 회원 정보 전달)
+  function handleJoinRowClick(rowEl, event) {
+    if (event) event.stopPropagation();
+    if (!rowEl) return;
+    const actId = rowEl.dataset.activationId;
+    const userUn = rowEl.dataset.userUn;
+    const userNm = rowEl.dataset.userNm;
+    const birth = rowEl.dataset.birth;
+
+    if (typeof openActivationEditModal === 'function') {
+      openActivationEditModal(actId, event, { un: userUn, nm: userNm, birth_dt: birth });
+    }
+  }
+
   // 페이지당 표시 개수(limit) 변경 처리
   function changeLimit(newLimit) {
     const url = new URL(window.location.href);

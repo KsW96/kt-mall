@@ -242,6 +242,84 @@ function parseDateTime(val) {
 }
 
 /**
+ * 엑셀 시트 행 데이터를 기반으로 파일 포맷(USER vs ACTIVATION vs UNKNOWN) 정밀 진단
+ */
+function diagnoseExcelFormat(rows) {
+  if (!rows || rows.length === 0) {
+    return {
+      type: 'EMPTY',
+      name: '빈 파일',
+      detectedHeaders: [],
+      reason: '엑셀 시트에 데이터가 비어 있습니다.'
+    };
+  }
+
+  // 상위 최대 5개 행을 검색하여 헤더 후보 텍스트 수집
+  let headers = [];
+  let headerRowIdx = -1;
+
+  for (let r = 0; r < Math.min(5, rows.length); r++) {
+    const row = rows[r] || [];
+    const textValues = row.map(c => String(c || '').trim()).filter(Boolean);
+    if (textValues.length >= 2) {
+      headers = textValues;
+      headerRowIdx = r;
+      break;
+    }
+  }
+
+  const combinedHeaderStr = headers.join(' ').toLowerCase();
+
+  // 개통 이력 대표 키워드
+  const activationKeywords = ['관리코드', '개통일', '모델명', '일련번호', '출고가', '개통번호', '판매처', '개통처리자', '재고구분', '판매약정'];
+  const matchedActKeywords = activationKeywords.filter(k => combinedHeaderStr.includes(k));
+
+  // 회원 정보 대표 키워드
+  const userKeywords = ['고객번호', '고객 고유번호', 'un', 'nm', '회원명', '가입승인', '탈퇴여부', '최종접속일', '가입일시', '포인트'];
+  const matchedUserKeywords = userKeywords.filter(k => combinedHeaderStr.includes(k));
+
+  // 데이터 행의 첫 번째 컬럼(un)이 순수 숫자인 행 개수 카운트
+  let numericFirstColCount = 0;
+  const sampleStart = (headerRowIdx >= 0) ? headerRowIdx + 1 : 0;
+  const sampleRows = rows.slice(sampleStart, sampleStart + 15);
+  sampleRows.forEach(row => {
+    if (row && /^\d+$/.test(String(row[0] || '').trim())) {
+      numericFirstColCount++;
+    }
+  });
+
+  // 1. 개통 이력 포맷 판별: 핵심 키워드가 2개 이상이거나 '관리코드'/'개통일'이 명시되어 있는 경우
+  if (matchedActKeywords.length >= 2 || combinedHeaderStr.includes('관리코드') || combinedHeaderStr.includes('개통일')) {
+    return {
+      type: 'ACTIVATION',
+      name: '개통 이력 (activation_log)',
+      detectedHeaders: headers.slice(0, 15),
+      matchedKeywords: matchedActKeywords,
+      reason: `개통 이력 주요 컬럼 [${matchedActKeywords.join(', ')}] 감지됨`
+    };
+  }
+
+  // 2. 회원 정보 포맷 판별: 회원 키워드가 매칭되거나, 1열이 순수 숫자로 시작하는 행이 다수인 경우
+  if (matchedUserKeywords.length >= 1 || (numericFirstColCount >= 2 && headers.length <= 15)) {
+    return {
+      type: 'USER',
+      name: '회원 정보 (app_user)',
+      detectedHeaders: headers.slice(0, 10),
+      matchedKeywords: matchedUserKeywords,
+      reason: `회원 정보 구조 (고객 고유번호 un 및 회원 컬럼) 감지됨`
+    };
+  }
+
+  return {
+    type: 'UNKNOWN',
+    name: '규격 미일치 엑셀',
+    detectedHeaders: headers.slice(0, 12),
+    matchedKeywords: [],
+    reason: '회원 정보(10개 컬럼) 및 개통 이력(80개 컬럼) 규격과 일치하지 않는 엑셀 파일입니다.'
+  };
+}
+
+/**
  * 엑셀 파일 버퍼 또는 파일 경로를 전달받아 app_user 규격으로 파싱
  */
 function parseUserExcel(filePath) {
@@ -251,6 +329,42 @@ function parseUserExcel(filePath) {
 
   // 2차원 배열 형태로 시트 데이터 추출 (raw 모드)
   const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+  // 0. 포맷 사전 진단 (개통 이력 등 다른 포맷 감지 시 상세 사유 반환)
+  const diagnosis = diagnoseExcelFormat(rows);
+  if (diagnosis.type === 'ACTIVATION') {
+    return {
+      formatMismatch: true,
+      detectedType: 'ACTIVATION',
+      detectedName: diagnosis.name,
+      expectedType: 'USER',
+      expectedName: '회원 정보 (app_user)',
+      message: '업로드하신 파일은 [개통 이력] 엑셀 파일로 감지되었습니다.',
+      suggestion: '현재 화면은 [회원 정보] 업로드 모드입니다. 상단 업로드 타입에서 [개통 이력]을 선택하시거나 [개통 이력 관리] 메뉴에서 업로드해 주세요.',
+      detectedHeaders: diagnosis.detectedHeaders,
+      expectedColumns: ['1열: 고객고유번호 (un)', '2열: 이름 (nm)', '3열: 포인트 (point)', '4열: 생년월일 (YYMMDD)', '5열: 휴대폰번호 (phone)', '6열: 메모 (memo)', '7열: 가입일시', '8열: 최종접속일시', '9열: 가입승인여부', '10열: 탈퇴여부 (status)'],
+      users: [],
+      totalRows: rows ? rows.length : 0,
+      errors: []
+    };
+  }
+
+  if (diagnosis.type === 'EMPTY') {
+    return {
+      formatMismatch: true,
+      detectedType: 'EMPTY',
+      detectedName: '빈 파일',
+      expectedType: 'USER',
+      expectedName: '회원 정보 (app_user)',
+      message: '엑셀 파일의 시트에 데이터가 비어 있습니다.',
+      suggestion: '내용이 포함된 유효한 회원 엑셀 파일을 선택해 주세요.',
+      detectedHeaders: [],
+      expectedColumns: ['1열: 고객고유번호 (un)', '2열: 이름 (nm)', '5열: 휴대폰번호 (phone)'],
+      users: [],
+      totalRows: 0,
+      errors: []
+    };
+  }
 
   const userMap = new Map();
   const errors = [];
@@ -329,6 +443,23 @@ function parseUserExcel(filePath) {
 
   const parsedUsers = Array.from(userMap.values());
 
+  if (parsedUsers.length === 0) {
+    return {
+      formatMismatch: true,
+      detectedType: diagnosis.type,
+      detectedName: diagnosis.name,
+      expectedType: 'USER',
+      expectedName: '회원 정보 (app_user)',
+      message: '회원 규격에 맞는 데이터 행을 찾을 수 없습니다.',
+      suggestion: '1열(A열)에 고객 고유번호(un, 순수 숫자) 및 2열(B열)에 회원 이름이 입력되어 있는지 확인해 주세요.',
+      detectedHeaders: diagnosis.detectedHeaders,
+      expectedColumns: ['1열: 고객고유번호 (un, 숫자)', '2열: 이름 (nm)', '3열: 포인트 (point)', '4열: 생년월일', '5열: 휴대폰번호 (phone)'],
+      users: [],
+      totalRows: rows.length,
+      errors
+    };
+  }
+
   return {
     users: parsedUsers,
     totalRows: rows.length,
@@ -350,13 +481,65 @@ function parseActivationExcel(filePath) {
   const errors = [];
 
   if (!rows || rows.length === 0) {
-    return { logs: [], totalRows: 0, errors: [] };
+    return {
+      formatMismatch: true,
+      detectedType: 'EMPTY',
+      detectedName: '빈 파일',
+      expectedType: 'ACTIVATION',
+      expectedName: '개통 이력 (activation_log)',
+      message: '엑셀 파일의 시트에 데이터가 비어 있습니다.',
+      suggestion: '내용이 포함된 유효한 개통 이력 엑셀 파일을 선택해 주세요.',
+      detectedHeaders: [],
+      expectedColumns: ['관리코드', '개통일', '모델명', '고객명', '개통번호'],
+      logs: [],
+      totalRows: 0,
+      errors: []
+    };
+  }
+
+  // 0. 포맷 사전 진단 (회원 정보 등 다른 포맷 감지 시 상세 사유 반환)
+  const diagnosis = diagnoseExcelFormat(rows);
+  if (diagnosis.type === 'USER') {
+    return {
+      formatMismatch: true,
+      detectedType: 'USER',
+      detectedName: diagnosis.name,
+      expectedType: 'ACTIVATION',
+      expectedName: '개통 이력 (activation_log)',
+      message: '업로드하신 파일은 [회원 정보 (app_user)] 엑셀 파일로 감지되었습니다.',
+      suggestion: '현재 화면은 [개통 이력] 업로드 모드입니다. 상단 업로드 타입에서 [회원 정보]를 선택하시거나 [회원 관리] 메뉴에서 업로드해 주세요.',
+      detectedHeaders: diagnosis.detectedHeaders,
+      expectedColumns: ['관리코드', '개통일', '모델명', '일련번호', '고객명', '개통번호', '생년월일', '출고가', '... (통신사 80개 컬럼)'],
+      logs: [],
+      totalRows: rows.length,
+      errors: []
+    };
   }
 
   // 1. 헤더 행 감지
   let startIndex = 0;
   const firstRow = rows[0] || [];
   const firstRowText = firstRow.map(c => String(c).trim()).join('|');
+
+  // 개통 이력 필수 핵심 키워드 중 하나라도 포함되어 있는지 검사 (엉뚱한 엑셀 파일 차단)
+  const hasActivationKeyword = ['관리코드', '개통일', '모델명', '일련번호', '고객명', '개통번호', '출고가', '판매처', 'vat', '개통'].some(k => firstRowText.includes(k));
+
+  if (!hasActivationKeyword && diagnosis.type === 'UNKNOWN') {
+    return {
+      formatMismatch: true,
+      detectedType: 'UNKNOWN',
+      detectedName: diagnosis.name,
+      expectedType: 'ACTIVATION',
+      expectedName: '개통 이력 (activation_log)',
+      message: '개통 이력 엑셀 규격(통신사 80개 컬럼)과 일치하지 않는 파일입니다.',
+      suggestion: '통신사 개통 대리점 원본 엑셀 파일(관리코드, 개통일, 모델명, 고객명, 개통번호 등이 포함된 파일)인지 확인해 주세요.',
+      detectedHeaders: diagnosis.detectedHeaders,
+      expectedColumns: ['번호', '관리코드', '개통일', '모델명', '일련번호', '제품구분', '출고가', '고객명', '개통번호'],
+      logs: [],
+      totalRows: rows.length,
+      errors: []
+    };
+  }
 
   // 컬럼 매핑 초기화 (기본: 80개 컬럼 인덱스 0~79 순서대로 매핑)
   const indexToField = ALL_80_COLUMNS.map(c => c.field);
@@ -427,6 +610,23 @@ function parseActivationExcel(filePath) {
     }
 
     parsedLogs.push(rowObj);
+  }
+
+  if (parsedLogs.length === 0) {
+    return {
+      formatMismatch: true,
+      detectedType: diagnosis.type,
+      detectedName: diagnosis.name,
+      expectedType: 'ACTIVATION',
+      expectedName: '개통 이력 (activation_log)',
+      message: '개통 이력 규격에 맞는 데이터 행을 찾을 수 없습니다.',
+      suggestion: '통신사 개통 대리점 원본 엑셀 파일(관리코드, 개통일, 모델명, 고객명, 개통번호 등이 포함된 파일)인지 확인해 주세요.',
+      detectedHeaders: diagnosis.detectedHeaders,
+      expectedColumns: ['관리코드', '개통일', '모델명', '일련번호', '고객명', '개통번호', '생년월일', '출고가'],
+      logs: [],
+      totalRows: rows.length - startIndex,
+      errors
+    };
   }
 
   return {

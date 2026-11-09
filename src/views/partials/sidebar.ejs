@@ -1,8 +1,18 @@
 <!-- Sidebar Navigation -->
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm min-vh-100 p-3">
   <div class="position-sticky pt-2">
-    <div class="text-uppercase text-secondary fw-semibold small px-3 mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-      메인 메뉴
+    <div class="d-flex align-items-center justify-content-between px-2 mb-2 pb-1 border-bottom">
+      <div class="text-uppercase text-secondary fw-semibold small" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+        메인 메뉴
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <!-- 데스크탑 사이드바 접기 버튼 -->
+        <button type="button" class="btn btn-sm btn-light border-0 text-secondary p-1 rounded-2 d-none d-md-inline-flex align-items-center justify-content-center" id="sidebarCollapseBtn" title="사이드바 접기 (화면 넓게 보기)" style="width: 26px; height: 26px;">
+          <i class="bi bi-chevron-bar-left fs-6"></i>
+        </button>
+        <!-- 모바일 사이드바 닫기 버튼 -->
+        <button type="button" class="btn-close d-md-none small" id="sidebarCloseMobile" aria-label="사이드바 닫기" style="font-size: 0.75rem;"></button>
+      </div>
     </div>
     <ul class="nav flex-column gap-1">
       <% if (typeof sidebarTree !== 'undefined' && sidebarTree && sidebarTree.length > 0) { %>
@@ -14,20 +24,26 @@
                (activeMenu === 'system-menus' && c.menu_url === '/system/menus') ||
                (activeMenu === 'system-configs' && c.menu_url === '/system/configs') ||
                (activeMenu === 'notification-sms' && c.menu_url === '/notifications/sms') ||
-               (activeMenu === 'notification-alimtalk' && c.menu_url === '/notifications/alimtalk')
+               (activeMenu === 'notification-alimtalk' && c.menu_url === '/notifications/alimtalk') ||
+               (activeMenu === 'notification-history' && c.menu_url === '/notifications/history')
              ))); %>
           <% const isGroupActive = isRootActive || isChildActive; %>
 
           <% if (hasChildren) { %>
             <!-- 상위-하위 계층형 드롭다운/토글 메뉴 (아코디언) -->
+            <% const isRootUnimplemented = false; %>
             <li class="nav-item">
-              <a class="nav-link rounded-3 d-flex align-items-center gap-2 text-dark <%= isGroupActive ? 'fw-bold bg-light' : '' %> <%= isGroupActive ? '' : 'collapsed' %>"
+              <a class="nav-link rounded-3 d-flex align-items-center gap-2 text-dark <%= isGroupActive ? 'fw-bold bg-light' : '' %> <%= isGroupActive ? '' : 'collapsed' %> <%= isRootUnimplemented ? 'unimplemented-sidebar-link' : '' %>"
                  data-bs-toggle="collapse"
                  href="#collapse-menu-<%= root.menu_id %>"
                  role="button"
-                 aria-expanded="<%= isGroupActive ? 'true' : 'false' %>">
+                 aria-expanded="<%= isGroupActive ? 'true' : 'false' %>"
+                 <% if (isRootUnimplemented) { %>data-bs-toggle="tooltip" data-bs-placement="right" title="기능 준비 중 (UI 프로토타입)"<% } %>>
                 <i class="bi <%= root.menu_icon || 'bi-folder-fill' %>"></i>
                 <span><%= root.menu_name %></span>
+                <% if (isRootUnimplemented) { %>
+                  <span class="unimplemented-badge ms-1">미구현</span>
+                <% } %>
                 <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary"></i>
               </a>
               <div class="collapse <%= isGroupActive ? 'show' : '' %>" id="collapse-menu-<%= root.menu_id %>">
@@ -40,20 +56,25 @@
                            (activeMenu === 'system-menus' && sub.menu_url === '/system/menus') ||
                            (activeMenu === 'system-configs' && sub.menu_url === '/system/configs') ||
                            (activeMenu === 'notification-sms' && sub.menu_url === '/notifications/sms') ||
-                           (activeMenu === 'notification-alimtalk' && sub.menu_url === '/notifications/alimtalk')
+                           (activeMenu === 'notification-alimtalk' && sub.menu_url === '/notifications/alimtalk') ||
+                           (activeMenu === 'notification-history' && sub.menu_url === '/notifications/history')
                          )); %>
                       <% const isSubGroupActive = isSubActive || (hasSubChildren && sub.children.some(leaf => typeof activeMenu !== 'undefined' && (leaf.menu_url === '/' + activeMenu))); %>
+                      <% const isSubUnimplemented = sub.menu_url && sub.menu_url === '/notifications/alimtalk'; %>
                       
                       <% if (hasSubChildren) { %>
                         <!-- 소메뉴를 가진 중메뉴 (2차 아코디언 토글) -->
                         <li class="nav-item">
-                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubGroupActive ? 'fw-semibold text-primary' : 'text-secondary' %> <%= isSubGroupActive ? '' : 'collapsed' %>"
+                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubGroupActive ? 'fw-semibold text-primary' : 'text-secondary' %> <%= isSubGroupActive ? '' : 'collapsed' %> <%= isSubUnimplemented ? 'unimplemented-sidebar-link' : '' %>"
                              data-bs-toggle="collapse"
                              href="#collapse-sub-<%= sub.menu_id %>"
                              role="button"
                              aria-expanded="<%= isSubGroupActive ? 'true' : 'false' %>">
                             <i class="bi <%= sub.menu_icon || 'bi-folder2' %>" style="font-size: 0.85rem;"></i>
                             <span><%= sub.menu_name %></span>
+                            <% if (isSubUnimplemented) { %>
+                              <span class="unimplemented-badge ms-auto">미구현</span>
+                            <% } %>
                             <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary" style="font-size: 0.7rem;"></i>
                           </a>
                           <div class="collapse <%= isSubGroupActive ? 'show' : '' %>" id="collapse-sub-<%= sub.menu_id %>">
@@ -61,10 +82,17 @@
                               <ul class="nav flex-column gap-1">
                                 <% sub.children.forEach(leaf => { %>
                                   <% const isLeafActive = (typeof activeMenu !== 'undefined' && (leaf.menu_url.includes(activeMenu) || leaf.menu_url === '/' + activeMenu)); %>
+                                  <% const isLeafUnimplemented = leaf.menu_url && leaf.menu_url === '/notifications/alimtalk'; %>
                                   <li class="nav-item">
-                                    <a class="nav-link py-1 d-flex align-items-center gap-2 <%= isLeafActive ? 'active fw-bold text-primary' : 'text-muted' %>" href="<%= leaf.menu_url %>" style="font-size: 0.82rem;">
+                                    <a class="nav-link py-1 d-flex align-items-center gap-2 <%= isLeafActive ? 'active fw-bold text-primary' : 'text-muted' %> <%= isLeafUnimplemented ? 'unimplemented-sidebar-link' : '' %>" 
+                                       href="<%= leaf.menu_url %>" 
+                                       style="font-size: 0.82rem;"
+                                       <% if (isLeafUnimplemented) { %>data-bs-toggle="tooltip" data-bs-placement="right" title="기능 준비 중 (미구현)"<% } %>>
                                       <i class="bi <%= leaf.menu_icon || 'bi-dash' %>" style="font-size: 0.75rem;"></i>
                                       <span><%= leaf.menu_name %></span>
+                                      <% if (isLeafUnimplemented) { %>
+                                        <span class="unimplemented-badge ms-auto">미구현</span>
+                                      <% } %>
                                     </a>
                                   </li>
                                 <% }); %>
@@ -75,9 +103,14 @@
                       <% } else { %>
                         <!-- 단일 중메뉴 링크 -->
                         <li class="nav-item">
-                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubActive ? 'active' : '' %>" href="<%= sub.menu_url %>">
+                          <a class="nav-link d-flex align-items-center gap-2 <%= isSubActive ? 'active' : '' %> <%= isSubUnimplemented ? 'unimplemented-sidebar-link' : '' %>" 
+                             href="<%= sub.menu_url %>"
+                             <% if (isSubUnimplemented) { %>data-bs-toggle="tooltip" data-bs-placement="right" title="기능 준비 중 (미구현)"<% } %>>
                             <i class="bi <%= sub.menu_icon || 'bi-dot' %>" style="font-size: 0.8rem;"></i>
                             <span><%= sub.menu_name %></span>
+                            <% if (isSubUnimplemented) { %>
+                              <span class="unimplemented-badge ms-auto">미구현</span>
+                            <% } %>
                           </a>
                         </li>
                       <% } %>
@@ -147,8 +180,8 @@
              href="#collapse-menu-fallback-noti"
              role="button"
              aria-expanded="<%= isNotiActive ? 'true' : 'false' %>">
-            <i class="bi bi-bell-fill"></i>
-            <span>알림 관리</span>
+            <i class="bi bi-chat-square-text-fill"></i>
+            <span>메세지 관리</span>
             <i class="bi bi-chevron-down ms-auto sidebar-chevron small text-secondary"></i>
           </a>
           <div class="collapse <%= isNotiActive ? 'show' : '' %>" id="collapse-menu-fallback-noti">

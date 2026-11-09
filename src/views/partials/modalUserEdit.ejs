@@ -1,0 +1,260 @@
+<!-- ======================================================== -->
+<!-- MODAL: 회원 상세 정보 확인 및 수정 (app_user)              -->
+<!-- ======================================================== -->
+<div class="modal fade" id="modalUserEdit" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="formUserEdit">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-person-lines-fill text-primary"></i>
+            <span id="userModalTitle">회원 상세 정보 및 수정</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 1. 기본 식별 정보 (고객번호, 가입일, 최종접속일) -->
+          <div class="card border bg-light mb-3">
+            <div class="card-body p-3">
+              <div class="row g-2 align-items-center small">
+                <div class="col-md-4">
+                  <span class="text-secondary fw-semibold">고객 고유번호 (un):</span>
+                  <input type="text" class="form-control form-control-sm font-monospace bg-white mt-1 fw-bold" id="editUserUn" readonly>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-secondary fw-semibold">가입일시 (join_dt):</span>
+                  <input type="text" class="form-control form-control-sm bg-white mt-1 text-muted" id="editUserJoinDt" readonly>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-secondary fw-semibold">최종접속일시 (last_login_dt):</span>
+                  <input type="text" class="form-control form-control-sm bg-white mt-1 text-muted" id="editUserLastLoginDt" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 수정 가능한 주요 정보 -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary">회원 이름 (nm) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm fw-semibold" id="editUserNm" name="nm" required placeholder="회원 이름">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary">휴대폰 번호 (phone)</label>
+              <input type="text" class="form-control form-control-sm font-monospace" id="editUserPhone" name="phone" placeholder="010-0000-0000">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">생년월일 (YYMMDD)</label>
+              <input type="text" class="form-control form-control-sm font-monospace" id="editUserBirthDt" name="birth_dt" maxlength="6" placeholder="예: 850512">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">보유 포인트 (point)</label>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control font-monospace text-end" id="editUserPoint" name="point" value="0" data-format="currency" placeholder="0">
+                <span class="input-group-text">P</span>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">가입승인여부</label>
+              <select class="form-select form-select-sm" id="editUserApprovalYn" name="approval_yn">
+                <option value="Y">승인 (Y)</option>
+                <option value="N">미승인 (N)</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">회원 상태 (탈퇴여부)</label>
+              <select class="form-select form-select-sm" id="editUserStatus" name="status">
+                <option value="I">정상 활동 회원 (I)</option>
+                <option value="O">탈퇴 회원 (O)</option>
+              </select>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold text-secondary">관리자 메모 (memo)</label>
+              <textarea class="form-control form-control-sm" id="editUserMemo" name="memo" rows="2" placeholder="고객 관련 특이사항이나 관리 메모"></textarea>
+            </div>
+          </div>
+
+          <div id="userEditAlert" class="alert d-none py-2 px-3 small mb-0"></div>
+        </div>
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">닫기</button>
+          <button type="submit" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnSaveUser">
+            <i class="bi bi-check-lg me-1"></i>수정 내용 저장
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 안전한 회원 모달 열기 함수 (Bootstrap 및 Pure JS 폴백 지원)
+  function showUserModalSafe(el) {
+    if (!el) return;
+    if (el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
+    if (window.bootstrap && bootstrap.Modal) {
+      try {
+        const instance = bootstrap.Modal.getOrCreateInstance(el);
+        if (instance) {
+          instance.show();
+          return;
+        }
+      } catch (e) {
+        try {
+          new bootstrap.Modal(el).show();
+          return;
+        } catch (e2) {}
+      }
+    }
+    // Pure JS fallback
+    el.classList.add('show');
+    el.style.display = 'block';
+    el.setAttribute('aria-modal', 'true');
+    el.removeAttribute('aria-hidden');
+    document.body.classList.add('modal-open');
+    let backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      document.body.appendChild(backdrop);
+      backdrop.onclick = () => hideUserModalSafe(el);
+    }
+  }
+
+  // 안전한 회원 모달 닫기 함수
+  function hideUserModalSafe(el) {
+    if (!el) return;
+    if (window.bootstrap && bootstrap.Modal) {
+      try {
+        const instance = bootstrap.Modal.getInstance(el);
+        if (instance) {
+          instance.hide();
+          return;
+        }
+      } catch (e) {}
+    }
+    el.classList.remove('show');
+    el.style.display = 'none';
+    el.setAttribute('aria-hidden', 'true');
+    el.removeAttribute('aria-modal');
+    document.body.classList.remove('modal-open');
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+  }
+
+  // 회원 상세 팝업 오픈 및 데이터 로드
+  async function openUserEditModal(un, event) {
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+
+    const modalEl = document.getElementById('modalUserEdit');
+    if (!modalEl) {
+      alert('회원 상세 모달 요소를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 닫기 버튼들에 폴백 이벤트 바인딩
+    modalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+      btn.onclick = () => hideUserModalSafe(modalEl);
+    });
+    
+    // 초기화
+    document.getElementById('formUserEdit').reset();
+    document.getElementById('editUserUn').value = un;
+    document.getElementById('userModalTitle').innerHTML = `회원 상세 정보 [고유번호: ${un}]`;
+    
+    // 즉시 로딩 알림 표시 후 모달 오픈!
+    const alertBox = document.getElementById('userEditAlert');
+    alertBox.className = 'alert alert-info py-2 px-3 small mb-0';
+    alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 회원 상세 데이터를 불러오는 중입니다...';
+    alertBox.classList.remove('d-none');
+    showUserModalSafe(modalEl);
+
+    try {
+      const res = await fetch(`/api/users/${un}`);
+      const data = await res.json();
+      if (data.success && data.user) {
+        const u = data.user;
+        document.getElementById('editUserNm').value = u.nm || '';
+        document.getElementById('editUserPhone').value = u.phone || '';
+        document.getElementById('editUserBirthDt').value = u.birth_dt || '';
+        document.getElementById('editUserPoint').value = u.point || 0;
+        document.getElementById('editUserApprovalYn').value = (u.approval_yn === 'N') ? 'N' : 'Y';
+        document.getElementById('editUserStatus').value = (u.status === 'O') ? 'O' : 'I';
+        document.getElementById('editUserJoinDt').value = u.join_dt || '-';
+        document.getElementById('editUserLastLoginDt').value = u.last_login_dt || '-';
+        document.getElementById('editUserMemo').value = u.memo || '';
+        alertBox.classList.add('d-none');
+      } else {
+        alertBox.className = 'alert alert-danger py-2 px-3 small mb-0';
+        alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> 데이터를 불러오지 못했습니다: ${data.message || ''}`;
+      }
+    } catch (err) {
+      alertBox.className = 'alert alert-danger py-2 px-3 small mb-0';
+      alertBox.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> 통신 에러: ${err.message}`;
+    }
+  }
+
+  // 회원 정보 수정 비동기 전송
+  const formUserEditEl = document.getElementById('formUserEdit');
+  if (formUserEditEl) {
+    formUserEditEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const un = document.getElementById('editUserUn').value;
+      const btn = document.getElementById('btnSaveUser');
+      const alertBox = document.getElementById('userEditAlert');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 저장 중...';
+
+      const payload = {
+        nm: document.getElementById('editUserNm').value.trim(),
+        phone: document.getElementById('editUserPhone').value.trim(),
+        birth_dt: document.getElementById('editUserBirthDt').value.trim(),
+        point: parseInt(String(document.getElementById('editUserPoint').value).replace(/[^0-9]/g, ''), 10) || 0,
+        approval_yn: document.getElementById('editUserApprovalYn').value,
+        status: document.getElementById('editUserStatus').value,
+        memo: document.getElementById('editUserMemo').value.trim()
+      };
+
+      try {
+        const res = await fetch(`/api/users/${un}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alertBox.className = 'alert alert-success py-2 px-3 small mb-0';
+          alertBox.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.message}`;
+          alertBox.classList.remove('d-none');
+          setTimeout(() => location.reload(), 600);
+        } else {
+          alertBox.className = 'alert alert-danger py-2 px-3 small mb-0';
+          alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.message}`;
+          alertBox.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>수정 내용 저장';
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger py-2 px-3 small mb-0';
+        alertBox.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> 통신 에러: ${err.message}`;
+        alertBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>수정 내용 저장';
+      }
+    });
+  }
+</script>
+

@@ -11,16 +11,17 @@ let mockMenus = [
   { menu_id: 7, parent_id: null, menu_name: '시스템 관리', menu_url: '/system/menus', menu_icon: 'bi-gear-fill', menu_depth: 1, sort_order: 7, use_yn: 'Y' },
   { menu_id: 8, parent_id: 7, menu_name: '메뉴 관리', menu_url: '/system/menus', menu_icon: 'bi-list-ul', menu_depth: 2, sort_order: 1, use_yn: 'Y' },
   { menu_id: 9, parent_id: 7, menu_name: '공통 설정 및 코드', menu_url: '/system/configs', menu_icon: 'bi-sliders', menu_depth: 2, sort_order: 2, use_yn: 'Y' },
-  { menu_id: 10, parent_id: null, menu_name: '알림 관리', menu_url: '#', menu_icon: 'bi-bell-fill', menu_depth: 1, sort_order: 8, use_yn: 'Y' },
+  { menu_id: 10, parent_id: null, menu_name: '메세지 관리', menu_url: '#', menu_icon: 'bi-chat-square-text-fill', menu_depth: 1, sort_order: 8, use_yn: 'Y' },
   { menu_id: 11, parent_id: 10, menu_name: '문자 관리', menu_url: '/notifications/sms', menu_icon: 'bi-chat-dots-fill', menu_depth: 2, sort_order: 1, use_yn: 'Y' },
-  { menu_id: 12, parent_id: 10, menu_name: '알림톡 관리', menu_url: '/notifications/alimtalk', menu_icon: 'bi-chat-quote-fill', menu_depth: 2, sort_order: 2, use_yn: 'Y' }
+  { menu_id: 12, parent_id: 10, menu_name: '알림톡 관리', menu_url: '/notifications/alimtalk', menu_icon: 'bi-chat-quote-fill', menu_depth: 2, sort_order: 2, use_yn: 'Y' },
+  { menu_id: 13, parent_id: 10, menu_name: '메세지 발송 이력', menu_url: '/notifications/history', menu_icon: 'bi-clock-history', menu_depth: 2, sort_order: 3, use_yn: 'Y' }
 ];
 
 let mockConfigs = [
   { id: 1, group_code: 'UPLOAD_META', item_code: 'MEMBER_EXCEL', item_name: '회원정보 최근 업로드 일시', item_value: '-', description: '회원(app_user) 엑셀 파일 최근 업로드 완료 일시', sort_order: 1, use_yn: 'Y' },
   { id: 2, group_code: 'UPLOAD_META', item_code: 'OPEN_EXCEL', item_name: '개통정보 최근 업로드 일시', item_value: '-', description: '개통(activation_log) 엑셀 파일 최근 업로드 완료 일시', sort_order: 2, use_yn: 'Y' },
   { id: 3, group_code: 'SERVER_ENV', item_code: 'PUBLIC_IP', item_name: '내 공인 IP 주소', item_value: '127.0.0.1', description: '서버 또는 관리자 접속 공인 IP 주소', sort_order: 1, use_yn: 'Y' },
-  { id: 4, group_code: 'SERVER_ENV', item_code: 'PORTAL_NAME', item_name: '관리자 포털 명칭', item_value: 'KT 마켓 관리자 포털', description: '시스템 상단 브랜드 및 브라우저 타이틀 명칭', sort_order: 2, use_yn: 'Y' }
+  { id: 4, group_code: 'SERVER_ENV', item_code: 'PORTAL_NAME', item_name: '관리자 포털 명칭', item_value: 'KT몰 관리자 포털', description: '시스템 상단 브랜드 및 브라우저 타이틀 명칭', sort_order: 2, use_yn: 'Y' }
 ];
 
 const SystemModel = {
@@ -50,6 +51,7 @@ const SystemModel = {
           FROM sys_menu m
           LEFT JOIN sys_menu p ON m.parent_id = p.menu_id
           ORDER BY 
+            COALESCE(p.sort_order, m.sort_order) ASC,
             COALESCE(m.parent_id, m.menu_id) ASC,
             m.menu_depth ASC,
             m.sort_order ASC,
@@ -68,6 +70,25 @@ const SystemModel = {
             const [updatedRows] = await db.query(sql);
             return updatedRows;
           }
+          // 기존 '알림 관리'로 저장되어 있는 경우 '메세지 관리'로 자동 동기화
+          try {
+            await db.query("UPDATE sys_menu SET menu_name = '메세지 관리', menu_icon = 'bi-chat-square-text-fill' WHERE menu_id = 10 AND menu_name = '알림 관리'");
+          } catch (e) {}
+
+          // 13: 메세지 발송 이력 메뉴 자동 추가 동기화
+          const hasHistory = rows.some(r => r.menu_url === '/notifications/history');
+          if (!hasHistory) {
+            const h = mockMenus.find(m => m.menu_id === 13);
+            if (h) {
+              await db.query(
+                'INSERT IGNORE INTO sys_menu (menu_id, parent_id, menu_name, menu_url, menu_icon, menu_depth, sort_order, use_yn) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [h.menu_id, h.parent_id, h.menu_name, h.menu_url, h.menu_icon, h.menu_depth, h.sort_order, h.use_yn]
+              );
+              const [syncedRows] = await db.query(sql);
+              return syncedRows;
+            }
+          }
+
           return rows;
         }
         // DB 테이블이 비어있는 경우 기본 메뉴 세팅
@@ -87,8 +108,19 @@ const SystemModel = {
       const parent = mockMenus.find(p => p.menu_id === m.parent_id);
       return {
         ...m,
-        parent_name: parent ? parent.menu_name : null
+        parent_name: parent ? parent.menu_name : null,
+        parent_sort_order: parent ? parent.sort_order : m.sort_order
       };
+    }).sort((a, b) => {
+      const pOrderDiff = (a.parent_sort_order || 0) - (b.parent_sort_order || 0);
+      if (pOrderDiff !== 0) return pOrderDiff;
+      const groupDiff = (a.parent_id || a.menu_id) - (b.parent_id || b.menu_id);
+      if (groupDiff !== 0) return groupDiff;
+      const depthDiff = (a.menu_depth || 1) - (b.menu_depth || 1);
+      if (depthDiff !== 0) return depthDiff;
+      const sortDiff = (a.sort_order || 0) - (b.sort_order || 0);
+      if (sortDiff !== 0) return sortDiff;
+      return a.menu_id - b.menu_id;
     });
   },
 
@@ -453,6 +485,57 @@ const SystemModel = {
       return { affectedRows: 1 };
     }
     return { affectedRows: 0 };
+  },
+
+  /**
+   * 화면별 초경량 데이터 변경 감지 버전 체크
+   */
+  async checkDataVersion(page = 'dashboard') {
+    let targetTables = ['app_user', 'activation_log'];
+
+    if (page === 'users') targetTables = ['app_user'];
+    else if (page === 'activations') targetTables = ['activation_log'];
+    else if (page === 'user-activations') targetTables = ['app_user', 'activation_log'];
+    else if (page === 'system-menus' || page === 'menus') targetTables = ['sys_menu'];
+    else if (page === 'system-configs' || page === 'configs') targetTables = ['sys_config'];
+    else if (page.includes('notification')) targetTables = ['sms_log', 'sms_template', 'sys_config'];
+
+    if (db.getDbStatus().connected) {
+      try {
+        const placeholders = targetTables.map(() => '?').join(',');
+        const sql = `
+          SELECT 
+            TABLE_NAME as name,
+            COALESCE(UPDATE_TIME, CREATE_TIME, '1970-01-01 00:00:00') as upd_time,
+            TABLE_ROWS as rows_cnt
+          FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (${placeholders})
+        `;
+        const [tableRows] = await db.query(sql, targetTables);
+
+        // UPLOAD_META 최근 업로드 시점 확인
+        let uploadMetaStr = '';
+        try {
+          const [cfg] = await db.query("SELECT item_code, item_value FROM sys_config WHERE group_code = 'UPLOAD_META'");
+          if (cfg && cfg.length > 0) {
+            uploadMetaStr = cfg.map(c => `${c.item_code}:${c.item_value}`).join('|');
+          }
+        } catch (e) {}
+
+        const versionStr = tableRows.map(r => `${r.name}:${r.rows_cnt}:${r.upd_time}`).join('#') + (uploadMetaStr ? '@' + uploadMetaStr : '');
+        return {
+          version: versionStr,
+          timestamp: Date.now()
+        };
+      } catch (err) {
+        console.error('checkDataVersion Error:', err.message);
+      }
+    }
+
+    return {
+      version: `MOCK_${page}_${Math.floor(Date.now() / 60000)}`,
+      timestamp: Date.now()
+    };
   }
 };
 

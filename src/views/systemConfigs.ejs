@@ -6,8 +6,8 @@
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
       <h1 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-        <i class="bi bi-sliders text-success"></i>
-        <span>공통 설정 및 코드 관리</span>
+        <i class="bi <%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_icon) ? currentMenu.menu_icon : 'bi-sliders' %> text-success"></i>
+        <span><%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_name) ? currentMenu.menu_name : '공통 설정 및 코드' %></span>
       </h1>
       <p class="text-muted small mb-0">시스템 공통 코드, 최근 엑셀 업로드 일시(MEMBER_EXCEL, OPEN_EXCEL), 공인 IP를 Key-Value 구조로 동적 관리합니다.</p>
     </div>
@@ -24,20 +24,6 @@
       </button>
     </div>
   </div>
-
-  <!-- Navigation Tabs (독립 페이지 탭 네비게이션) -->
-  <ul class="nav nav-tabs mb-4 border-bottom gap-1">
-    <li class="nav-item">
-      <a class="nav-link text-secondary px-3 py-2" href="/system/menus">
-        <i class="bi bi-diagram-3 me-1"></i>계층형 메뉴 관리 (sys_menu)
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link active fw-bold text-success px-3 py-2 border-bottom-0" href="/system/configs">
-        <i class="bi bi-sliders me-1"></i>공통 설정 및 코드 관리 (sys_config)
-      </a>
-    </li>
-  </ul>
 
   <!-- Summary Cards -->
   <div class="row g-3 mb-4">
@@ -129,18 +115,18 @@
 
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 user-table" style="min-width: 1050px;">
+        <table class="table table-hover align-middle mb-0 user-table no-scroll-table">
           <thead class="table-light">
             <tr>
-              <th scope="col" class="text-center" style="width: 50px;">ID</th>
-              <th scope="col" class="text-center" style="width: 140px;">그룹 코드</th>
-              <th scope="col" class="text-start" style="width: 160px;">항목 코드</th>
-              <th scope="col" class="text-start" style="width: 180px;">항목 명칭</th>
-              <th scope="col" class="text-start" style="width: 220px;">설정 값 (Value)</th>
-              <th scope="col" class="text-start" style="width: 200px;">설명</th>
-              <th scope="col" class="text-center" style="width: 60px;">순서</th>
-              <th scope="col" class="text-center" style="width: 75px;">사용</th>
-              <th scope="col" class="text-center" style="width: 85px;">관리</th>
+              <th scope="col" class="text-center" style="width: 5%;">ID</th>
+              <th scope="col" class="text-center" style="width: 12%;">그룹 코드</th>
+              <th scope="col" class="text-start" style="width: 13%;">항목 코드</th>
+              <th scope="col" class="text-start" style="width: 15%;">항목 명칭</th>
+              <th scope="col" class="text-start" style="width: 20%;">설정 값 (Value)</th>
+              <th scope="col" class="text-start" style="width: 17%;">설명</th>
+              <th scope="col" class="text-center" style="width: 5%;">순서</th>
+              <th scope="col" class="text-center" style="width: 6%;">사용</th>
+              <th scope="col" class="text-center" style="width: 7%;">관리</th>
             </tr>
           </thead>
           <tbody>

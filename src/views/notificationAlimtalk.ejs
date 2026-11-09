@@ -7,21 +7,21 @@
     <div>
       <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
         <h1 class="h3 fw-bold mb-0 d-flex align-items-center gap-2">
-          <i class="bi bi-chat-quote-fill" style="color: #FEE500; text-shadow: 0 0 2px #3c1e1e;"></i>
-          <span>알림톡 관리 (카카오 비즈메시지)</span>
+          <i class="bi <%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_icon) ? currentMenu.menu_icon : 'bi-chat-quote-fill' %>" style="color: #FEE500; text-shadow: 0 0 2px #3c1e1e;"></i>
+          <span><%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_name) ? currentMenu.menu_name : '알림톡 관리' %></span>
         </h1>
-        <span class="badge border px-2.5 py-1" style="background-color: #FEE500; color: #3c1e1e; border-color: #ebd100 !important;">
-          <i class="bi bi-patch-check-fill me-1"></i>카카오 알림톡 공식 채널 연동
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary px-2.5 py-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="화면 설계 프로토타입 단계이며, 실제 카카오 알림톡 발송 기능은 연동 준비 중입니다.">
+          <i class="bi bi-cone-striped me-1 text-warning"></i>미구현 (UI 프로토타입)
         </span>
       </div>
       <p class="text-muted small mb-0">카카오 승인 템플릿 및 고객 개통일자 기준 정기 자동 발송 규칙을 설정하고 관리합니다.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-      <button type="button" class="btn btn-sm btn-outline-dark d-flex align-items-center gap-1 shadow-sm" onclick="openTestSendModal()">
+      <button type="button" class="btn btn-sm btn-outline-dark d-flex align-items-center gap-1 shadow-sm unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="기능 준비 중 (미구현)" onclick="openTestSendModal()">
         <i class="bi bi-send-fill text-warning"></i>
         <span>알림톡 테스트 발송</span>
       </button>
-      <button type="button" class="btn btn-sm text-dark fw-bold d-flex align-items-center gap-1 shadow-sm" style="background-color: #FEE500; border-color: #ebd100;" onclick="openTemplateModal()">
+      <button type="button" class="btn btn-sm text-dark fw-bold d-flex align-items-center gap-1 shadow-sm unimplemented-btn" style="background-color: #FEE500; border-color: #ebd100;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="기능 준비 중 (미구현)" onclick="openTemplateModal()">
         <i class="bi bi-plus-circle-fill"></i>
         <span>신규 알림톡 등록</span>
       </button>
@@ -31,19 +31,18 @@
     </div>
   </div>
 
-  <!-- Sub Navigation Tabs (문자 관리 vs 알림톡 관리) -->
-  <ul class="nav nav-tabs mb-4 border-bottom gap-1">
-    <li class="nav-item">
-      <a class="nav-link text-secondary px-3 py-2" href="/notifications/sms">
-        <i class="bi bi-chat-dots-fill me-1"></i>문자 관리 (SMS/LMS)
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link active fw-bold text-dark px-3 py-2 border-bottom-0" style="background-color: #FFFDEB; border-color: #dee2e6 #dee2e6 #FFFDEB;" href="/notifications/alimtalk">
-        <i class="bi bi-chat-quote-fill me-1 text-warning"></i>알림톡 관리 (카카오)
-      </a>
-    </li>
-  </ul>
+  <!-- Unimplemented Feature Notice Banner -->
+  <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 py-2.5 px-3 mb-4 rounded-3 text-dark unimplemented-notice-banner">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>
+      <div class="small">
+        <strong>[화면 설계 프로토타입 안내]</strong> 본 화면은 카카오 알림톡 템플릿·발송 주기·조건 설정을 위한 UI 화면 구성 단계입니다. 실제 카카오 비즈메시지 API 연동 및 발송 기능은 <strong>준비 중 (미구현)</strong>입니다.
+      </div>
+    </div>
+    <span class="badge bg-warning text-dark font-monospace flex-shrink-0" data-bs-toggle="tooltip" title="현재 기능 미구현 상태">
+      <i class="bi bi-tools me-1"></i>기능 준비 중 (미구현)
+    </span>
+  </div>
 
   <!-- Summary Metric Cards -->
   <div class="row g-3 mb-4">
@@ -149,17 +148,27 @@
 
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 user-table" style="min-width: 1050px;">
+        <table class="table table-hover align-middle mb-0 user-table no-scroll-table">
+          <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 9%;">
+            <col style="width: 21%;">
+            <col style="width: 18%;">
+            <col style="width: 15%;">
+            <col style="width: 13%;">
+            <col style="width: 8%;">
+            <col style="width: 11%;">
+          </colgroup>
           <thead class="table-light">
             <tr>
-              <th scope="col" class="text-center" style="width: 50px;">No</th>
-              <th scope="col" class="text-center" style="width: 90px;">카카오 승인</th>
-              <th scope="col" class="text-start" style="width: 220px;">템플릿명 (코드)</th>
-              <th scope="col" class="text-start" style="width: 180px;">발송 조건 (개통일 기준)</th>
-              <th scope="col" class="text-start" style="width: 150px;">발송 주기 및 시간</th>
-              <th scope="col" class="text-start" style="width: 140px;">링크 버튼</th>
-              <th scope="col" class="text-center" style="width: 90px;">상태</th>
-              <th scope="col" class="text-center" style="width: 130px;">관리</th>
+              <th scope="col" class="text-center">No</th>
+              <th scope="col" class="text-center">카카오 승인</th>
+              <th scope="col" class="text-start">템플릿명 (코드)</th>
+              <th scope="col" class="text-start">발송 조건 (개통일 기준)</th>
+              <th scope="col" class="text-start">발송 주기 및 시간</th>
+              <th scope="col" class="text-start">링크 버튼</th>
+              <th scope="col" class="text-center">상태</th>
+              <th scope="col" class="text-center">관리</th>
             </tr>
           </thead>
           <tbody>
@@ -196,24 +205,24 @@
                   </td>
                   <td class="text-center">
                     <% if (t.use_yn === 'Y') { %>
-                      <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-xs" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
+                      <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-xs unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
                         <i class="bi bi-check-circle-fill me-1"></i>USE
                       </button>
                     <% } else { %>
-                      <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-xs" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
+                      <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-xs unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="mockToggleStatus(this, '<%= t.template_name %>')">
                         <i class="bi bi-eye-slash-fill me-1"></i>HIDE
                       </button>
                     <% } %>
                   </td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-outline-dark py-0 px-2" title="미리보기 및 테스트 발송" onclick="openTestSendModalWithData(<%= JSON.stringify(t) %>)">
+                      <button type="button" class="btn btn-outline-dark py-0 px-2 unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="openTestSendModalWithData(<%= JSON.stringify(t) %>)">
                         <i class="bi bi-send text-warning"></i>
                       </button>
-                      <button type="button" class="btn btn-outline-secondary py-0 px-2" title="템플릿 수정" onclick="editTemplate(<%= JSON.stringify(t) %>)">
+                      <button type="button" class="btn btn-outline-secondary py-0 px-2 unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="editTemplate(<%= JSON.stringify(t) %>)">
                         <i class="bi bi-pencil-square"></i>
                       </button>
-                      <button type="button" class="btn btn-outline-danger py-0 px-2" title="템플릿 삭제" onclick="mockDeleteTemplate('<%= t.template_name %>')">
+                      <button type="button" class="btn btn-outline-danger py-0 px-2 unimplemented-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="mockDeleteTemplate('<%= t.template_name %>')">
                         <i class="bi bi-trash"></i>
                       </button>
                     </div>
@@ -242,6 +251,7 @@
         <h5 class="modal-title fw-bold fs-6 text-dark" id="modalTemplateTitle">
           <i class="bi bi-chat-quote-fill text-warning me-1"></i> 카카오 알림톡 템플릿 설정
         </h5>
+        <span class="unimplemented-badge ms-2" data-bs-toggle="tooltip" title="현재 화면은 UI 프리뷰입니다.">미구현 (UI 프리뷰)</span>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
@@ -362,7 +372,7 @@
 
               <div class="mb-3">
                 <label class="form-label small fw-semibold text-secondary">알림톡 본문 내용 <span class="text-danger">*</span></label>
-                <textarea class="form-control form-control-sm font-monospace" id="tplContentInput" rows="6">#{고객명} 고객님, KT 공식 마켓에서 개통이 성공적으로 완료되었습니다.
+                <textarea class="form-control form-control-sm font-monospace" id="tplContentInput" rows="6">#{고객명} 고객님, KT몰에서 개통이 성공적으로 완료되었습니다.
 
 ■ 개통 상세 내역
 - 고객명: #{고객명}
@@ -390,7 +400,7 @@
                     <input type="text" class="form-control form-control-sm" placeholder="버튼 2 명칭 (선택)" value="고객센터 연결">
                   </div>
                   <div class="col-8">
-                    <input type="text" class="form-control form-control-sm font-monospace" placeholder="앱 스킴 또는 URL" value="ktmarket://cs">
+                    <input type="text" class="form-control form-control-sm font-monospace" placeholder="앱 스킴 또는 URL" value="ktmall://cs">
                   </div>
                 </div>
               </div>
@@ -400,8 +410,8 @@
       </div>
       <div class="modal-footer bg-light py-2">
         <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">닫기</button>
-        <button type="button" class="btn btn-sm text-dark fw-bold px-3" style="background-color: #FEE500; border-color: #ebd100;" onclick="mockSaveTemplate()">
-          <i class="bi bi-check-lg me-1"></i>저장하기 (화면 데모)
+        <button type="button" class="btn btn-sm text-dark fw-bold px-3 unimplemented-btn" style="background-color: #FEE500; border-color: #ebd100;" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="mockSaveTemplate()">
+          <i class="bi bi-check-lg me-1"></i>저장하기 (미구현 데모)
         </button>
       </div>
     </div>
@@ -418,6 +428,7 @@
         <h5 class="modal-title fw-bold fs-6 text-dark">
           <i class="bi bi-chat-quote-fill text-warning me-1"></i> 5. 카카오 알림톡 테스트 발송 및 미리보기
         </h5>
+        <span class="unimplemented-badge ms-2" data-bs-toggle="tooltip" title="현재 화면은 UI 프리뷰입니다.">미구현 (UI 프리뷰)</span>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
@@ -469,8 +480,8 @@
             </div>
 
             <div class="d-grid">
-              <button type="button" class="btn text-dark fw-bold py-2 shadow-sm" style="background-color: #FEE500; border-color: #ebd100;" onclick="mockSendTestKakao()">
-                <i class="bi bi-chat-quote-fill me-1"></i>테스트 알림톡 즉시 발송하기
+              <button type="button" class="btn text-dark fw-bold py-2 shadow-sm unimplemented-btn" style="background-color: #FEE500; border-color: #ebd100;" data-bs-toggle="tooltip" data-bs-placement="top" title="기능 준비 중 (미구현)" onclick="mockSendTestKakao()">
+                <i class="bi bi-chat-quote-fill me-1"></i>테스트 알림톡 즉시 발송하기 (미구현 데모)
               </button>
             </div>
             <div id="testSendAlert" class="alert alert-success mt-3 py-2 px-3 small d-none"></div>
@@ -491,13 +502,13 @@
                   <div class="rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold" style="width: 28px; height: 28px; background-color: #FEE500; font-size: 0.75rem;">
                     KT
                   </div>
-                  <div class="small fw-bold text-dark">KT 마켓 알림톡</div>
+                  <div class="small fw-bold text-dark">KT몰 알림톡</div>
                   <span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 0.6rem;">인증채널</span>
                 </div>
 
                 <!-- Kakao Message Bubble -->
                 <div class="bg-white p-3 rounded-3 shadow-xs text-start mb-2" style="font-size: 0.78rem; line-height: 1.45; white-space: pre-wrap;" id="kakaoMessageBubble">
-홍길동 고객님, KT 공식 마켓에서 개통이 성공적으로 완료되었습니다.
+홍길동 고객님, KT몰에서 개통이 성공적으로 완료되었습니다.
 
 ■ 개통 상세 내역
 - 고객명: 홍길동
@@ -623,36 +634,25 @@
   function mockSendTestKakao() {
     const phone = document.getElementById('testPhoneInput').value;
     const box = document.getElementById('testSendAlert');
-    box.className = 'alert alert-success mt-3 py-2 px-3 small';
-    box.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> [${phone}] 카카오톡 계정으로 테스트 알림톡이 정상 요청되었습니다. (화면 테스트 구조)`;
+    box.className = 'alert alert-warning mt-3 py-2 px-3 small';
+    box.innerHTML = `<i class="bi bi-info-circle-fill me-1"></i> [${phone}] 번호로의 알림톡 발송은 <strong>[미구현 UI 데모]</strong> 상태입니다. 실제 카카오 비즈메시지 API 연동 준비 중입니다.`;
     box.classList.remove('d-none');
-    setTimeout(() => box.classList.add('d-none'), 3500);
+    setTimeout(() => box.classList.add('d-none'), 4000);
   }
 
   function mockSaveTemplate() {
-    alert('알림톡 템플릿 설정이 성공적으로 저장되었습니다. (화면 구성 데모)');
+    alert('현재 화면은 알림톡 템플릿 화면 구성 프로토타입이며, 실제 카카오 승인 및 DB 저장 기능은 준비 중(미구현)입니다.');
     const modalEl = document.getElementById('modalTemplate');
     const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getInstance(modalEl) : null;
     if (modal) modal.hide();
   }
 
   function mockToggleStatus(btn, name) {
-    const isUse = btn.classList.contains('btn-success');
-    if (isUse) {
-      btn.className = 'btn btn-sm btn-danger px-3 py-1 fw-bold shadow-xs';
-      btn.innerHTML = '<i class="bi bi-eye-slash-fill me-1"></i>HIDE';
-      alert(`[${name}] 알림톡이 [HIDE (발송 중지)] 상태로 변경되었습니다.`);
-    } else {
-      btn.className = 'btn btn-sm btn-success px-3 py-1 fw-bold shadow-xs';
-      btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>USE';
-      alert(`[${name}] 알림톡이 [USE (발송 활성)] 상태로 변경되었습니다.`);
-    }
+    alert(`[${name}] 알림톡의 발송 상태 토글 기능은 현재 준비 중(미구현)입니다.`);
   }
 
   function mockDeleteTemplate(name) {
-    if (confirm(`[${name}] 템플릿을 삭제하시겠습니까? (화면 데모)`)) {
-      alert(`[${name}] 템플릿이 삭제되었습니다.`);
-    }
+    alert(`[${name}] 알림톡 템플릿 삭제 기능은 현재 준비 중(미구현)입니다.`);
   }
 </script>
 

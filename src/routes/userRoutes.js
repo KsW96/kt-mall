@@ -25,6 +25,8 @@ const upload = multer({
 });
 
 router.get('/users', userController.getUserListPage);
+router.get('/api/users/:un', userController.getUserDetail);
+router.put('/api/users/:un', userController.updateUser);
 router.post('/api/users/upload-excel', upload.single('excelFile'), userController.uploadExcel);
 router.delete('/api/users/:un', userController.deleteUser);
 router.post('/api/users/clear-all', userController.clearAllUsers);

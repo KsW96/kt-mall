@@ -8,6 +8,18 @@ router.get('/notifications', (req, res) => res.redirect('/notifications/sms'));
 // 하위 메뉴 개별 페이지
 router.get('/notifications/sms', notificationController.renderSmsPage);
 router.get('/notifications/alimtalk', notificationController.renderAlimtalkPage);
+router.get('/notifications/history', notificationController.renderHistoryPage);
+
+// Aligo SMS 연동 API
+router.post('/api/notifications/sms/send-test', notificationController.sendTestSms);
+router.post('/api/notifications/sms/send-bulk', notificationController.sendBulkSms);
+router.post('/api/notifications/sms/config', notificationController.saveConfig);
+router.get('/api/notifications/sms/remain', notificationController.getRemain);
+
+// 템플릿 관리 API
+router.post('/api/notifications/templates/save', notificationController.saveTemplate);
+router.post('/api/notifications/templates/:id/toggle', notificationController.toggleTemplateStatus);
+router.delete('/api/notifications/templates/:id', notificationController.deleteTemplate);
 
 module.exports = router;
 

@@ -65,13 +65,40 @@ const activationController = {
     const originalFileName = req.file.originalname || 'unknown.xlsx';
 
     try {
-      const { logs, totalRows, errors } = parseActivationExcel(filePath);
+      // 1. 엑셀 파일 파싱 및 데이터 전처리
+      const parseResult = parseActivationExcel(filePath);
 
-      if (logs.length === 0) {
+      if (parseResult.formatMismatch) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         return res.status(400).json({
           success: false,
-          message: '유효한 개통 이력 데이터 행을 찾을 수 없습니다. (고객명, 개통번호 확인 필요)'
+          formatMismatch: true,
+          errorType: 'FORMAT_MISMATCH',
+          detectedType: parseResult.detectedType,
+          detectedName: parseResult.detectedName,
+          expectedType: parseResult.expectedType,
+          expectedName: parseResult.expectedName,
+          title: '엑셀 파일 포맷 불일치',
+          message: parseResult.message,
+          suggestion: parseResult.suggestion,
+          detectedHeaders: parseResult.detectedHeaders || [],
+          expectedColumns: parseResult.expectedColumns || []
+        });
+      }
+
+      const { logs, totalRows, errors } = parseResult;
+
+      if (!logs || logs.length === 0) {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        return res.status(400).json({
+          success: false,
+          formatMismatch: true,
+          errorType: 'EMPTY_OR_INVALID',
+          title: '개통 이력 데이터 없음',
+          message: '유효한 개통 이력 데이터 행을 찾을 수 없습니다. (고객명, 개통번호 확인 필요)',
+          suggestion: '통신사 원본 80개 컬럼 엑셀 파일인지 확인해 주세요.',
+          detectedHeaders: parseResult.detectedHeaders || [],
+          expectedColumns: ['관리코드', '개통일', '모델명', '고객명', '개통번호']
         });
       }
 
@@ -153,6 +180,47 @@ const activationController = {
         success: false,
         message: '해당 과정에서 문제가 발생했습니다. 관리자에게 문의해 주세요.'
       });
+    }
+  },
+
+  /**
+   * 개통 단건 상세 조회 (80개 컬럼 전체)
+   */
+  async getActivationDetail(req, res) {
+    try {
+      const { id } = req.params;
+      const activation = await ActivationModel.findById(id);
+      if (!activation) {
+        return res.status(404).json({ success: false, message: '개통 이력 데이터를 찾을 수 없습니다.' });
+      }
+      return res.json({ success: true, activation });
+    } catch (err) {
+      console.error('개통 상세 조회 오류:', err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * 개통 단건 정보 수정
+   */
+  async updateActivation(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      if (!updateData || Object.keys(updateData).length === 0) {
+        return res.status(400).json({ success: false, message: '수정할 데이터가 없습니다.' });
+      }
+
+      const result = await ActivationModel.updateActivation(id, updateData);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: '수정할 개통 데이터를 찾지 못했습니다.' });
+      }
+
+      return res.json({ success: true, message: '개통 이력 정보가 성공적으로 수정되었습니다.' });
+    } catch (err) {
+      console.error('개통 수정 오류:', err);
+      return res.status(500).json({ success: false, message: '수정 처리 중 오류가 발생했습니다: ' + err.message });
     }
   },
 

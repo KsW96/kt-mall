@@ -35,20 +35,39 @@ app.use(async (req, res, next) => {
     // use_yn === 'Y' (USE 상태)인 메뉴만 사이드바에 표출
     const activeMenus = allMenus.filter(m => m.use_yn === 'Y');
 
-    // 1단계: 대메뉴 (parent_id 가 null 이거나 0인 메뉴)
-    const tree = activeMenus.filter(m => !m.parent_id);
+    // 1단계: 대메뉴 (parent_id 가 null 이거나 0인 메뉴) - sort_order ASC 정렬
+    const tree = activeMenus
+      .filter(m => !m.parent_id)
+      .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || a.menu_id - b.menu_id);
 
-    // 2단계: 중메뉴 및 소메뉴 계층 매핑
+    // 2단계: 중메뉴 및 소메뉴 계층 매핑 및 sort_order ASC 정렬
     tree.forEach(root => {
-      root.children = activeMenus.filter(c => c.parent_id === root.menu_id);
+      root.children = activeMenus
+        .filter(c => c.parent_id === root.menu_id)
+        .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || a.menu_id - b.menu_id);
+
       root.children.forEach(sub => {
-        sub.children = activeMenus.filter(leaf => leaf.parent_id === sub.menu_id);
+        sub.children = activeMenus
+          .filter(leaf => leaf.parent_id === sub.menu_id)
+          .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || a.menu_id - b.menu_id);
       });
     });
 
     res.locals.sidebarTree = tree;
+
+    // 현재 요청 URL 경로에 매칭되는 메뉴 객체 자동 탐색 (화면 내부 제목 동기화용)
+    const currentPath = req.path;
+    let currentMenu = allMenus.find(m => m.menu_url === currentPath);
+    if (!currentMenu) {
+      // 하위 경로 매칭 (예: /users?page=1, /system/...)
+      currentMenu = allMenus.find(m => m.menu_url && m.menu_url !== '#' && m.menu_url !== '/' && currentPath.startsWith(m.menu_url));
+    }
+    res.locals.currentMenu = currentMenu || null;
+    res.locals.allMenus = allMenus;
   } catch (err) {
     res.locals.sidebarTree = [];
+    res.locals.currentMenu = null;
+    res.locals.allMenus = [];
   }
   next();
 });

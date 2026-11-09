@@ -221,7 +221,7 @@ const UserModel = {
             COUNT(*) as totalUsers,
             COUNT(CASE WHEN status = 'I' THEN 1 END) as activeUsers,
             COUNT(CASE WHEN status = 'O' THEN 1 END) as inactiveUsers,
-            IFNULL(SUM(point), 0) as totalPoints
+            IFNULL(SUM(CASE WHEN status = 'I' THEN point ELSE 0 END), 0) as totalPoints
           FROM app_user
         `);
         const s = rows[0] || {};
@@ -250,9 +250,69 @@ const UserModel = {
       totalUsers: mockUsers.length,
       activeUsers: mockUsers.filter(u => u.status === 'I').length,
       inactiveUsers: mockUsers.filter(u => u.status === 'O').length,
-      totalPoints: mockUsers.reduce((acc, u) => acc + (u.point || 0), 0),
+      totalPoints: mockUsers.filter(u => u.status === 'I').reduce((acc, u) => acc + (u.point || 0), 0),
       lastUploadDt
     };
+  },
+
+  /**
+   * 특정 고객 고유번호(un) 1건 상세 조회
+   */
+  async findByUn(un) {
+    if (db.getDbStatus().connected) {
+      const [rows] = await db.query('SELECT * FROM app_user WHERE un = ?', [un]);
+      return rows && rows.length > 0 ? rows[0] : null;
+    }
+
+    const user = mockUsers.find(u => String(u.un) === String(un));
+    return user || null;
+  },
+
+  /**
+   * 특정 고객 고유번호(un) 정보 수정
+   */
+  async updateUser(un, { nm, birth_dt, phone, point, memo, approval_yn, status }) {
+    if (db.getDbStatus().connected) {
+      const sql = `
+        UPDATE app_user
+        SET 
+          nm = ?,
+          birth_dt = ?,
+          phone = ?,
+          point = ?,
+          memo = ?,
+          approval_yn = ?,
+          status = ?
+        WHERE un = ?
+      `;
+      const [result] = await db.query(sql, [
+        nm ? nm.trim() : '',
+        birth_dt ? birth_dt.trim() : null,
+        phone ? phone.trim() : null,
+        parseInt(point, 10) || 0,
+        memo ? memo.trim() : null,
+        approval_yn ? approval_yn.trim() : 'Y',
+        status === 'O' ? 'O' : 'I',
+        un
+      ]);
+      return { affectedRows: result.affectedRows };
+    }
+
+    const idx = mockUsers.findIndex(u => String(u.un) === String(un));
+    if (idx >= 0) {
+      mockUsers[idx] = {
+        ...mockUsers[idx],
+        nm,
+        birth_dt,
+        phone,
+        point: parseInt(point, 10) || 0,
+        memo,
+        approval_yn,
+        status: status === 'O' ? 'O' : 'I'
+      };
+      return { affectedRows: 1 };
+    }
+    return { affectedRows: 0 };
   },
 
   /**

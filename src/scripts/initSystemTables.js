@@ -59,7 +59,7 @@ async function initSystemTables() {
     ['UPLOAD_META', 'MEMBER_EXCEL', '회원정보 최근 업로드 일시', '-', '회원(app_user) 엑셀 파일 최근 업로드 완료 일시', 1, 'Y'],
     ['UPLOAD_META', 'OPEN_EXCEL', '개통정보 최근 업로드 일시', '-', '개통(activation_log) 엑셀 파일 최근 업로드 완료 일시', 2, 'Y'],
     ['SERVER_ENV', 'PUBLIC_IP', '내 공인 IP 주소', '127.0.0.1', '서버 또는 관리자 접속 공인 IP 주소', 1, 'Y'],
-    ['SERVER_ENV', 'PORTAL_NAME', '관리자 포털 명칭', 'KT 마켓 관리자 포털', '시스템 상단 브랜드 및 브라우저 타이틀 명칭', 2, 'Y']
+    ['SERVER_ENV', 'PORTAL_NAME', '관리자 포털 명칭', 'KT몰 관리자 포털', '시스템 상단 브랜드 및 브라우저 타이틀 명칭', 2, 'Y']
   ];
 
   for (const s of configSeeds) {

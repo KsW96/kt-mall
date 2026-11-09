@@ -6,8 +6,8 @@
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
     <div>
       <h1 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-        <i class="bi bi-diagram-3-fill text-primary"></i>
-        <span>메뉴 관리</span>
+        <i class="bi <%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_icon) ? currentMenu.menu_icon : 'bi-diagram-3-fill' %> text-primary"></i>
+        <span><%= (typeof currentMenu !== 'undefined' && currentMenu && currentMenu.menu_name) ? currentMenu.menu_name : '메뉴 관리' %></span>
       </h1>
       <p class="text-muted small mb-0">대·중·소메뉴 계층 구조, 사이드바 노출 여부(USE/HIDE), 정렬 순서를 관리합니다.</p>
     </div>
@@ -18,20 +18,6 @@
       </button>
     </div>
   </div>
-
-  <!-- Navigation Tabs (독립 페이지 탭 네비게이션) -->
-  <ul class="nav nav-tabs mb-4 border-bottom gap-1">
-    <li class="nav-item">
-      <a class="nav-link active fw-bold text-primary px-3 py-2 border-bottom-0" href="/system/menus">
-        <i class="bi bi-diagram-3-fill me-1"></i>계층형 메뉴 관리 (sys_menu)
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link text-secondary px-3 py-2" href="/system/configs">
-        <i class="bi bi-sliders me-1"></i>공통 설정 및 코드 관리 (sys_config)
-      </a>
-    </li>
-  </ul>
 
   <!-- Global Alert Box -->
   <div id="systemAlertBox" class="alert d-none py-2 px-3 small mb-3"></div>
@@ -56,18 +42,18 @@
 
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 user-table" style="min-width: 900px;">
+        <table class="table table-hover align-middle mb-0 user-table no-scroll-table">
           <thead class="table-light">
             <tr>
-              <th scope="col" class="text-center" style="width: 60px;">ID</th>
-              <th scope="col" class="text-center" style="width: 80px;">계층</th>
-              <th scope="col" class="text-center" style="width: 140px;">상위 메뉴</th>
-              <th scope="col" class="text-center" style="width: 80px;">아이콘</th>
-              <th scope="col" class="text-start" style="width: 190px;">메뉴 이름</th>
-              <th scope="col" class="text-start" style="width: 220px;">이동 URL</th>
-              <th scope="col" class="text-center" style="width: 70px;">순서</th>
-              <th scope="col" class="text-center" style="width: 120px;">상태 토글</th>
-              <th scope="col" class="text-center" style="width: 90px;">관리</th>
+              <th scope="col" class="text-center" style="width: 5%;">ID</th>
+              <th scope="col" class="text-center" style="width: 8%;">계층</th>
+              <th scope="col" class="text-center" style="width: 12%;">상위 메뉴</th>
+              <th scope="col" class="text-center" style="width: 7%;">아이콘</th>
+              <th scope="col" class="text-start" style="width: 20%;">메뉴 이름</th>
+              <th scope="col" class="text-start" style="width: 22%;">이동 URL</th>
+              <th scope="col" class="text-center" style="width: 7%;">순서</th>
+              <th scope="col" class="text-center" style="width: 11%;">상태 토글</th>
+              <th scope="col" class="text-center" style="width: 8%;">관리</th>
             </tr>
           </thead>
           <tbody>
@@ -104,6 +90,7 @@
 
                   <!-- 5. 메뉴 이름 (계층 들여쓰기 시각화) -->
                   <td class="text-start">
+                    <% const isMenuUnimplemented = (m.menu_url && m.menu_url.startsWith('/notifications')) || m.menu_name === '메세지 관리'; %>
                     <% if (m.menu_depth === 2) { %>
                       <span class="text-secondary me-1 ms-2">└─</span>
                       <strong class="text-dark"><%= m.menu_name %></strong>
@@ -112,6 +99,9 @@
                       <span class="text-dark"><%= m.menu_name %></span>
                     <% } else { %>
                       <span class="fw-bold text-dark fs-6"><%= m.menu_name %></span>
+                    <% } %>
+                    <% if (isMenuUnimplemented) { %>
+                      <span class="unimplemented-badge ms-1" data-bs-toggle="tooltip" title="화면 설계 프로토타입 단계 (기능 미구현)">미구현</span>
                     <% } %>
                   </td>
 
@@ -367,6 +357,10 @@
     document.getElementById('menuDepthSelect').value = '1';
     document.getElementById('menuUseSelect').value = 'Y';
     updateIconPreview('bi-circle');
+    
+    // 부모 셀렉트 옵션 전체 활성화
+    document.querySelectorAll('#menuParentSelect option').forEach(opt => opt.disabled = false);
+
     const modalEl = document.getElementById('modalMenu');
     const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
     if (modal) modal.show();
@@ -383,6 +377,12 @@
     document.getElementById('menuDepthSelect').value = m.menu_depth || 1;
     document.getElementById('menuUseSelect').value = m.use_yn || 'Y';
     updateIconPreview(m.menu_icon);
+
+    // 자기 자신을 상위 메뉴로 지정하지 못하도록 비활성화
+    document.querySelectorAll('#menuParentSelect option').forEach(opt => {
+      opt.disabled = (opt.value === String(m.menu_id));
+    });
+
     const modalEl = document.getElementById('modalMenu');
     const modal = (window.bootstrap && bootstrap.Modal) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
     if (modal) modal.show();
@@ -448,24 +448,6 @@
       alert('요청 중 통신 에러 발생: ' + err.message);
     }
   });
-
-  async function deleteMenu(menuId, menuName) {
-    if (!confirm(`[${menuName}] 메뉴를 삭제하시겠습니까?`)) return;
-
-    try {
-      const res = await fetch(`/api/system/menus/${menuId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showAlert(data.message);
-        setTimeout(() => location.reload(), 600);
-      } else {
-        alert('삭제 실패: ' + data.message);
-      }
-    } catch (err) {
-      alert('삭제 중 통신 에러 발생: ' + err.message);
-    }
-  }
-</script>
 
   async function deleteMenu(menuId, menuName) {
     if (!confirm(`[${menuName}] 메뉴를 삭제하시겠습니까?`)) return;

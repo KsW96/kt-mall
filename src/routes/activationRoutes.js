@@ -24,6 +24,8 @@ const upload = multer({
 });
 
 router.get('/activations', activationController.getActivationListPage);
+router.get('/api/activations/:id', activationController.getActivationDetail);
+router.put('/api/activations/:id', activationController.updateActivation);
 router.post('/api/activations/upload-excel', upload.single('excelFile'), activationController.uploadExcel);
 router.delete('/api/activations/:id', activationController.deleteActivation);
 router.post('/api/activations/clear-all', activationController.clearAllActivations);

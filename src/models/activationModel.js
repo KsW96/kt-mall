@@ -296,6 +296,57 @@ const ActivationModel = {
   },
 
   /**
+   * 단건 개통 이력 80개 전체 컬럼 상세 조회
+   */
+  async findById(id) {
+    if (db.getDbStatus().connected) {
+      const [rows] = await db.query('SELECT * FROM activation_log WHERE id = ?', [id]);
+      return rows && rows.length > 0 ? rows[0] : null;
+    }
+
+    const item = mockActivations.find(l => String(l.id) === String(id));
+    return item || null;
+  },
+
+  /**
+   * 단건 개통 이력 정보 수정 (80개 컬럼 동적 UPDATE)
+   */
+  async updateActivation(id, data) {
+    const validFields = ALL_80_COLUMNS.map(c => c.field);
+    const updateClauses = [];
+    const values = [];
+
+    validFields.forEach(field => {
+      if (data[field] !== undefined) {
+        updateClauses.push(`\`${field}\` = ?`);
+        values.push(data[field] === '' ? null : data[field]);
+      }
+    });
+
+    if (updateClauses.length === 0) {
+      return { affectedRows: 0 };
+    }
+
+    if (db.getDbStatus().connected) {
+      values.push(id);
+      const sql = `UPDATE activation_log SET ${updateClauses.join(', ')} WHERE id = ?`;
+      const [result] = await db.query(sql, values);
+      return { affectedRows: result.affectedRows };
+    }
+
+    const idx = mockActivations.findIndex(l => String(l.id) === String(id));
+    if (idx >= 0) {
+      validFields.forEach(field => {
+        if (data[field] !== undefined) {
+          mockActivations[idx][field] = data[field] === '' ? null : data[field];
+        }
+      });
+      return { affectedRows: 1 };
+    }
+    return { affectedRows: 0 };
+  },
+
+  /**
    * 단건 삭제
    */
   async deleteById(id) {

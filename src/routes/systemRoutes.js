@@ -23,5 +23,8 @@ router.delete('/api/system/configs/:id', systemController.deleteConfig);
 // 4. 공인 IP 자동 감지 및 갱신 API
 router.post('/api/system/detect-ip', systemController.detectPublicIp);
 
+// 5. 초경량 데이터 변경 감지 버전 체크 API
+router.get('/api/system/check-version', systemController.checkDataVersion);
+
 module.exports = router;
 
