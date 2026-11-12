@@ -108,8 +108,8 @@
           <div class="col-md-3">
             <select name="searchType" class="form-select form-select-sm">
               <option value="all" <%= filters.searchType === 'all' ? 'selected' : '' %>>전체 검색</option>
-              <option value="nm" <%= filters.searchType === 'nm' ? 'selected' : '' %>>회원 이름 (nm)</option>
-              <option value="phone" <%= filters.searchType === 'phone' ? 'selected' : '' %>>휴대폰 번호 (phone)</option>
+              <option value="nm" <%= filters.searchType === 'nm' ? 'selected' : '' %>>회원 이름</option>
+              <option value="phone" <%= filters.searchType === 'phone' ? 'selected' : '' %>>휴대폰 번호</option>
             </select>
           </div>
 
@@ -120,8 +120,8 @@
           <div class="col-md-3">
             <select name="status" class="form-select form-select-sm">
               <option value="">모든 회원 상태</option>
-              <option value="I" <%= filters.status === 'I' ? 'selected' : '' %>>활동 (I: 가입)</option>
-              <option value="O" <%= filters.status === 'O' ? 'selected' : '' %>>탈퇴 (O: 탈퇴)</option>
+              <option value="I" <%= filters.status === 'I' ? 'selected' : '' %>>활동 (가입)</option>
+              <option value="O" <%= filters.status === 'O' ? 'selected' : '' %>>탈퇴</option>
             </select>
           </div>
         </div>
@@ -302,27 +302,27 @@
             </div>
           </div>
 
-          <!-- 2-A. 회원(app_user) 컬럼 가이드 -->
+          <!-- 2-A. 회원 컬럼 가이드 -->
           <div id="guideBoxUser" class="alert alert-secondary py-2 px-3 small mb-3">
             <div class="fw-bold mb-1 text-primary"><i class="bi bi-info-circle-fill me-1"></i> [회원 정보] 엑셀 컬럼 순서 안내 (1열~10열)</div>
             <ol class="mb-0 ps-3">
-              <li><strong>고객 고유번호 (un)</strong>: 필수 (예: 11340)</li>
-              <li><strong>이름 (nm)</strong>: 필수 (예: 정미영)</li>
-              <li><strong>포인트 (point)</strong>: 콤마 자동 파싱 (예: 50,100 -> 50100)</li>
-              <li><strong>생년월일 (birth_dt)</strong>: 자동 변환 (예: 1978년 01월 12일 -> 1978-01-12)</li>
-              <li><strong>휴대폰번호 (phone)</strong>: (예: 010-6296-0067)</li>
-              <li><strong>메모 (memo)</strong>: 빈값 가능</li>
-              <li><strong>가입일 (join_dt)</strong>: (예: 2026-10-29 06:54:26)</li>
-              <li><strong>최종접속일 (last_login_dt)</strong>: (예: 2026-10-29 06:54:26)</li>
+              <li><strong>고객 고유번호</strong>: 필수 (예: 11340)</li>
+              <li><strong>이름</strong>: 필수 (예: 홍길동)</li>
+              <li><strong>포인트</strong>: 콤마 자동 파싱 (예: 50,100 -> 50100)</li>
+              <li><strong>생년월일</strong>: 자동 변환 (예: 1978년 01월 12일 -> 1978-01-12)</li>
+              <li><strong>휴대폰번호</strong>: (예: 010-1234-5678)</li>
+              <li><strong>메모</strong>: 빈값 가능</li>
+              <li><strong>가입일</strong>: (예: 2026-10-29 06:54:26)</li>
+              <li><strong>최종접속일</strong>: (예: 2026-10-29 06:54:26)</li>
               <li><strong>가입승인여부</strong>: 미사용 또는 빈칸</li>
-              <li><strong>탈퇴여부 (status)</strong>: 'I'(가입) 또는 'O'(탈퇴)</li>
+              <li><strong>탈퇴여부</strong>: 'I'(가입) 또는 'O'(탈퇴)</li>
             </ol>
             <div class="mt-2 text-primary" style="font-size: 0.78rem;">
-              * 이미 존재하는 고객 고유번호(un)인 경우 기존 데이터를 최신 정보로 자동 갱신(UPSERT)합니다.
+              * 이미 존재하는 고객 고유번호인 경우 기존 데이터를 최신 정보로 자동 갱신(UPSERT)합니다.
             </div>
           </div>
 
-          <!-- 2-B. 개통(activation_log) 컬럼 가이드 -->
+          <!-- 2-B. 개통 컬럼 가이드 -->
           <div id="guideBoxActivation" class="alert alert-success-subtle border border-success py-2 px-3 small mb-3 d-none">
             <div class="fw-bold mb-1 text-success"><i class="bi bi-check-circle-fill me-1"></i> [개통 이력] 통신사 기본 80개 엑셀 구조 지원</div>
             <div class="small text-secondary mb-1">
@@ -444,7 +444,7 @@
     const isActivation = typeActivationRadio && typeActivationRadio.checked;
     const targetUrl = isActivation ? '/api/activations/upload-excel' : '/api/users/upload-excel';
     const redirectUrl = isActivation ? '/activations' : '/users';
-    const targetName = isActivation ? '개통 이력 (activation_log)' : '회원 정보 (app_user)';
+    const targetName = isActivation ? '개통 이력' : '회원 정보';
 
     const submitBtn = document.getElementById('uploadSubmitBtn');
     const closeBtn = document.getElementById('modalCloseBtn');
@@ -456,7 +456,7 @@
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 처리 중...';
 
     alertBox.className = 'alert alert-info py-2 px-3 small mb-0';
-    alertBox.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> 엑셀 데이터를 파싱하고 MySQL [${targetName}]에 일괄 저장 중입니다. 잠시만 기다려 주세요...`;
+    alertBox.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> 엑셀 데이터를 파싱하고 [${targetName}]에 일괄 저장 중입니다. 잠시만 기다려 주세요...`;
     alertBox.classList.remove('d-none');
 
     const formData = new FormData(e.target);
@@ -539,7 +539,7 @@
         <div class="mt-3">
           <button type="button" class="btn btn-sm btn-outline-success w-100 fw-bold shadow-xs d-flex align-items-center justify-content-center gap-1 py-1.5" onclick="switchUploadMode('ACTIVATION')">
             <i class="bi bi-arrow-repeat fs-6"></i>
-            <span>[개통 이력 (activation_log)] 모드로 즉시 전환하기</span>
+            <span>[개통 이력] 모드로 즉시 전환하기</span>
           </button>
         </div>
       `;
@@ -548,7 +548,7 @@
         <div class="mt-3">
           <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-bold shadow-xs d-flex align-items-center justify-content-center gap-1 py-1.5" onclick="switchUploadMode('USER')">
             <i class="bi bi-arrow-repeat fs-6"></i>
-            <span>[회원 정보 (app_user)] 모드로 즉시 전환하기</span>
+            <span>[회원 정보] 모드로 즉시 전환하기</span>
           </button>
         </div>
       `;

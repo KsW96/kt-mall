@@ -122,7 +122,7 @@
               <th scope="col" class="text-center" style="width: 12%;">그룹 코드</th>
               <th scope="col" class="text-start" style="width: 13%;">항목 코드</th>
               <th scope="col" class="text-start" style="width: 15%;">항목 명칭</th>
-              <th scope="col" class="text-start" style="width: 20%;">설정 값 (Value)</th>
+              <th scope="col" class="text-start" style="width: 20%;">설정 값</th>
               <th scope="col" class="text-start" style="width: 17%;">설명</th>
               <th scope="col" class="text-center" style="width: 5%;">순서</th>
               <th scope="col" class="text-center" style="width: 6%;">사용</th>
@@ -151,7 +151,7 @@
                     <%= c.item_name %>
                   </td>
 
-                  <!-- 설정 값 (Value) -->
+                  <!-- 설정 값 -->
                   <td class="text-start">
                     <div class="d-flex align-items-center gap-1">
                       <code class="text-break bg-light px-2 py-1 rounded small border text-dark font-monospace flex-grow-1" style="max-height: 48px; overflow-y: auto;">
@@ -213,7 +213,7 @@
 </main>
 
 <!-- ======================================================== -->
-<!-- MODAL 1: 공통 설정 등록 / 수정 (sys_config)              -->
+<!-- MODAL 1: 공통 설정 등록 / 수정                            -->
 <!-- ======================================================== -->
 <div class="modal fade" id="modalConfig" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
@@ -229,7 +229,7 @@
         <div class="modal-body p-4">
           <!-- 그룹 코드 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">그룹 코드 (group_code) <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">그룹 코드 <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm font-monospace text-uppercase" name="group_code" id="configGroupInput" list="groupDatalist" placeholder="예: UPLOAD_META, SERVER_ENV, COMMON_CODE" required>
             <datalist id="groupDatalist">
               <option value="UPLOAD_META">
@@ -241,26 +241,26 @@
 
           <!-- 항목 코드 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">항목 코드 (item_code) <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">항목 코드 <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm font-monospace text-uppercase" name="item_code" id="configItemInput" placeholder="예: MEMBER_EXCEL, OPEN_EXCEL, PUBLIC_IP" required>
             <div class="form-text small">동일 그룹 내에서 고유(Unique)해야 합니다.</div>
           </div>
 
           <!-- 항목 명칭 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">항목 명칭 (item_name) <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">항목 명칭 <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm" name="item_name" id="configNameInput" placeholder="예: 회원정보 최근 업로드 일시" required>
           </div>
 
           <!-- 설정 값 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">설정 값 (item_value)</label>
+            <label class="form-label small fw-semibold text-secondary">설정 값</label>
             <textarea class="form-control form-control-sm font-monospace" name="item_value" id="configValueInput" rows="3" placeholder="저장할 설정 값 또는 JSON/일시 문자열"></textarea>
           </div>
 
           <!-- 설명 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">설명 (description)</label>
+            <label class="form-label small fw-semibold text-secondary">설명</label>
             <input type="text" class="form-control form-control-sm" name="description" id="configDescInput" placeholder="설정의 용도 및 상세 설명">
           </div>
 
@@ -298,7 +298,7 @@
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-light">
         <h5 class="modal-title fw-bold fs-6">
-          <i class="bi bi-pencil-square text-primary me-1"></i> 설정 값(Value) 빠른 수정
+          <i class="bi bi-pencil-square text-primary me-1"></i> 설정 값 빠른 수정
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>

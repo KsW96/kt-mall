@@ -76,6 +76,166 @@ let mockSmsTemplates = [
   }
 ];
 
+// 개통일 기준 타겟팅 샘플 고객 목록 (183일 이상 경과 고객 기본 예시 포함 - 통신사 비할당 안전 가상번호 010-0000-xxxx 적용)
+const mockTargetRecipients = [
+  {
+    id: 1001,
+    cust_nm: '정미영',
+    phone_num: '010-0000-0001',
+    opening_dt: '2026-04-12',
+    elapsed_days: 211,
+    model_nm: '갤럭시 S25 Ultra 512GB',
+    plan_nm: '5G 초이스 프리미엄',
+    installment_principal: 650000,
+    join_category: '기기변경',
+    agency_cd: 'AG-KT-102',
+    memo: '개통 6개월차 의무요금제 만료 대상자'
+  },
+  {
+    id: 1002,
+    cust_nm: '김태호',
+    phone_num: '010-0000-0002',
+    opening_dt: '2026-04-20',
+    elapsed_days: 203,
+    model_nm: 'iPhone 16 Pro 256GB',
+    plan_nm: '5G 스페셜',
+    installment_principal: 820000,
+    join_category: '번호이동',
+    agency_cd: 'AG-KT-105',
+    memo: '선택약정 유지 중'
+  },
+  {
+    id: 1003,
+    cust_nm: '이영희',
+    phone_num: '010-0000-0003',
+    opening_dt: '2026-05-02',
+    elapsed_days: 191,
+    model_nm: '갤럭시 Z플립6 256GB',
+    plan_nm: '5G 베이직',
+    installment_principal: 450000,
+    join_category: '신규가입',
+    agency_cd: 'AG-KT-101',
+    memo: '부가서비스 해지 가능 시점'
+  },
+  {
+    id: 1004,
+    cust_nm: '박지훈',
+    phone_num: '010-0000-0004',
+    opening_dt: '2026-03-15',
+    elapsed_days: 239,
+    model_nm: '갤럭시 S24 Plus',
+    plan_nm: '5G 슬림',
+    installment_principal: 380000,
+    join_category: '기기변경',
+    agency_cd: 'AG-KT-103',
+    memo: '우수고객 단말기 케어'
+  },
+  {
+    id: 1005,
+    cust_nm: '최수진',
+    phone_num: '010-0000-0005',
+    opening_dt: '2026-04-05',
+    elapsed_days: 218,
+    model_nm: 'iPhone 15 128GB',
+    plan_nm: 'LTE 데이터 ON 비디오',
+    installment_principal: 290000,
+    join_category: '번호이동',
+    agency_cd: 'AG-KT-108',
+    memo: '의무기간 경과 알림'
+  },
+  {
+    id: 1006,
+    cust_nm: '강민우',
+    phone_num: '010-0000-0006',
+    opening_dt: '2026-05-08',
+    elapsed_days: 185,
+    model_nm: '갤럭시 A35 5G',
+    plan_nm: '5G 세이브',
+    installment_principal: 150000,
+    join_category: '신규가입',
+    agency_cd: 'AG-KT-102',
+    memo: '183일 의무요금 만료'
+  },
+  {
+    id: 1007,
+    cust_nm: '윤서아',
+    phone_num: '010-0000-0007',
+    opening_dt: '2026-03-28',
+    elapsed_days: 226,
+    model_nm: '갤럭시 S25 256GB',
+    plan_nm: '5G 스페셜',
+    installment_principal: 590000,
+    join_category: '기기변경',
+    agency_cd: 'AG-KT-104',
+    memo: '가족결합 할인 적용 고객'
+  },
+  {
+    id: 1008,
+    cust_nm: '한상철',
+    phone_num: '010-0000-0008',
+    opening_dt: '2026-04-18',
+    elapsed_days: 205,
+    model_nm: 'iPhone 16 Plus 128GB',
+    plan_nm: '5G 프리미엄',
+    installment_principal: 740000,
+    join_category: '번호이동',
+    agency_cd: 'AG-KT-106',
+    memo: '요금제 자유변경 권한 부여'
+  },
+  {
+    id: 1009,
+    cust_nm: '오지은',
+    phone_num: '010-0000-0009',
+    opening_dt: '2026-05-05',
+    elapsed_days: 188,
+    model_nm: '갤럭시 Z폴드6 512GB',
+    plan_nm: '5G 슈퍼플랜 베이직',
+    installment_principal: 1120000,
+    join_category: '기기변경',
+    agency_cd: 'AG-KT-101',
+    memo: 'VIP 프리미엄 케어'
+  },
+  {
+    id: 1010,
+    cust_nm: '배현우',
+    phone_num: '010-0000-0010',
+    opening_dt: '2026-02-14',
+    elapsed_days: 268,
+    model_nm: '갤럭시 S24 Ultra',
+    plan_nm: '5G 프리미엄',
+    installment_principal: 720000,
+    join_category: '신규가입',
+    agency_cd: 'AG-KT-105',
+    memo: '장기 유지 우수 고객'
+  },
+  {
+    id: 1011,
+    cust_nm: '신예진',
+    phone_num: '010-0000-0011',
+    opening_dt: '2026-04-25',
+    elapsed_days: 198,
+    model_nm: 'iPhone 16 128GB',
+    plan_nm: '5G 심플 110GB',
+    installment_principal: 610000,
+    join_category: '번호이동',
+    agency_cd: 'AG-KT-107',
+    memo: '개통 183일 경과'
+  },
+  {
+    id: 1012,
+    cust_nm: '임도윤',
+    phone_num: '010-0000-0012',
+    opening_dt: '2026-05-09',
+    elapsed_days: 184,
+    model_nm: '갤럭시 S25 256GB',
+    plan_nm: '5G 스페셜',
+    installment_principal: 580000,
+    join_category: '기기변경',
+    agency_cd: 'AG-KT-102',
+    memo: '183일 경과 기준 충족'
+  }
+];
+
 // 인메모리 Fallback 발송 이력 목록 (DB 미연결 시)
 let mockSmsLogs = [
   {
@@ -83,17 +243,17 @@ let mockSmsLogs = [
     msg_type: 'SMS',
     sender_phone: '1588-0000',
     receiver_name: '김영희',
-    receiver_phone: '010-3344-5566',
+    receiver_phone: '010-0000-0003',
     title: '-',
     content: '[KT몰] 김영희님, 새 단말기(갤럭시 Z플립6) 개통 3일차 안심 케어 센터: 1588-0000',
     template_code: 'SMS_CARE_D3',
     reservation_dt: null,
     status: 'SUCCESS',
-    status_desc: '정상 발송 완료',
+    status_desc: '정상 발송 완료 (안전 시뮬레이션)',
     result_code: '1',
     msg_id: 'ALIGO_100234',
     carrier: 'SKT',
-    is_test: 'N',
+    is_test: 'Y',
     sent_at: '2026-11-06 10:30:10',
     created_at: '2026-11-06 10:30:10'
   },
@@ -102,17 +262,17 @@ let mockSmsLogs = [
     msg_type: 'LMS',
     sender_phone: '1588-0000',
     receiver_name: '이철수',
-    receiver_phone: '010-5566-7788',
+    receiver_phone: '010-0000-0007',
     title: '[KT몰] 요금제 자유 변경 기간 안내',
     content: '[KT몰] 이철수님 안녕하세요.\n개통 100일이 경과하여 개통 시 가입하신 의무 요금제를 자유롭게 변경하실 수 있습니다.',
     template_code: 'SMS_PLAN_D100',
     reservation_dt: null,
     status: 'SUCCESS',
-    status_desc: '정상 발송 완료',
+    status_desc: '정상 발송 완료 (안전 시뮬레이션)',
     result_code: '1',
     msg_id: 'ALIGO_100235',
     carrier: 'LGU+',
-    is_test: 'N',
+    is_test: 'Y',
     sent_at: '2026-11-06 11:00:05',
     created_at: '2026-11-06 11:00:05'
   }
@@ -679,6 +839,97 @@ const NotificationModel = {
       lmsCount: mockSmsLogs.filter(l => l.msg_type === 'LMS').length,
       alimtalkCount: mockSmsLogs.filter(l => l.msg_type === 'ALIMTALK').length,
       successRate: rate
+    };
+  },
+
+  /**
+   * 개통일 및 조건 기준 단체 발송 대상 고객 목록 조회
+   * @param {Object} options
+   * @param {string} options.condition - 타겟팅 조건 (기본: 'AFTER_183D' 개통 183일 경과)
+   * @param {number} options.days - 경과 일수 기준 (기본: 183)
+   * @param {string} options.keyword - 고객명/번호 필터
+   * @param {number} options.limit - 최대 조회 건수 (기본: 100)
+   */
+  async getTargetRecipients({ condition = 'AFTER_183D', days = 183, keyword = '', limit = 100 } = {}) {
+    await this.initTables();
+    const targetDays = parseInt(days, 10) || 183;
+
+    // 1. 실제 MySQL 연결 시 DB 쿼리
+    if (db.getDbStatus().connected) {
+      try {
+        let whereClauses = ["opening_dt IS NOT NULL AND opening_dt != ''"];
+        let params = [];
+
+        if (condition === 'AFTER_183D' || condition === 'AFTER_D') {
+          whereClauses.push('DATEDIFF(CURDATE(), STR_TO_DATE(opening_dt, "%Y-%m-%d")) >= ?');
+          params.push(targetDays);
+        } else if (condition === 'D_DAY') {
+          whereClauses.push('DATEDIFF(CURDATE(), STR_TO_DATE(opening_dt, "%Y-%m-%d")) = 0');
+        } else if (condition === 'AFTER_3D') {
+          whereClauses.push('DATEDIFF(CURDATE(), STR_TO_DATE(opening_dt, "%Y-%m-%d")) = 3');
+        } else if (condition === 'AFTER_100D') {
+          whereClauses.push('DATEDIFF(CURDATE(), STR_TO_DATE(opening_dt, "%Y-%m-%d")) = 100');
+        }
+
+        if (keyword) {
+          whereClauses.push('(cust_nm LIKE ? OR phone_num LIKE ? OR model_nm LIKE ?)');
+          params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+        }
+
+        const sql = `
+          SELECT 
+            id,
+            cust_nm,
+            phone_num,
+            opening_dt,
+            DATEDIFF(CURDATE(), STR_TO_DATE(opening_dt, '%Y-%m-%d')) AS elapsed_days,
+            model_nm,
+            plan_nm,
+            installment_principal,
+            join_category,
+            agency_cd
+          FROM activation_log
+          WHERE ${whereClauses.join(' AND ')}
+          ORDER BY opening_dt ASC
+          LIMIT ?
+        `;
+        params.push(parseInt(limit, 10));
+
+        const [rows] = await db.query(sql, params);
+        if (rows && rows.length > 0) {
+          return {
+            condition,
+            days: targetDays,
+            total: rows.length,
+            items: rows
+          };
+        }
+      } catch (err) {
+        console.warn('getTargetRecipients DB query warning, falling back to mock:', err.message);
+      }
+    }
+
+    // 2. Mock Fallback 데이터셋 (183일 이상 경과 고객 필터링)
+    let filtered = [...mockTargetRecipients];
+
+    if (condition === 'AFTER_183D' || condition === 'AFTER_D') {
+      filtered = filtered.filter(item => item.elapsed_days >= targetDays);
+    }
+
+    if (keyword) {
+      const q = keyword.toLowerCase();
+      filtered = filtered.filter(item =>
+        (item.cust_nm && item.cust_nm.toLowerCase().includes(q)) ||
+        (item.phone_num && item.phone_num.includes(q)) ||
+        (item.model_nm && item.model_nm.toLowerCase().includes(q))
+      );
+    }
+
+    return {
+      condition,
+      days: targetDays,
+      total: filtered.length,
+      items: filtered.slice(0, limit)
     };
   }
 };

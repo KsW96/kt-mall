@@ -149,19 +149,19 @@ const mockAlimtalkTemplates = [
   }
 ];
 
-// 인메모리 샘플 발송 이력 데이터셋 (조회 폼 및 화면 구성용)
+// 인메모리 샘플 발송 이력 데이터셋 (조회 폼 및 화면 구성용 - 통신사 비할당 안전 가상번호 010-0000-xxxx 적용)
 const mockHistoryList = [
   {
     id: 101,
     msg_type: 'ALIMTALK',
     channel_name: '카카오 알림톡',
     receiver_name: '홍길동',
-    receiver_phone: '010-9876-5432',
+    receiver_phone: '010-0000-0001',
     title: '[KT몰] 개통 완료 알림',
-    content: '홍길동 고객님, KT 공식몰에서 개통이 성공적으로 완료되었습니다.\n\n■ 개통 상세 내역\n- 고객명: 홍길동\n- 개통번호: 010-9876-5432\n- 단말기명: 갤럭시 S25 Ultra\n- 개통일자: 2026-11-06\n- 할부원금: 850,000원\n\n이용해 주셔서 감사합니다.',
+    content: '홍길동 고객님, KT 공식몰에서 개통이 성공적으로 완료되었습니다.\n\n■ 개통 상세 내역\n- 고객명: 홍길동\n- 개통번호: 010-0000-0001\n- 단말기명: 갤럭시 S25 Ultra\n- 개통일자: 2026-11-06\n- 할부원금: 850,000원\n\n이용해 주셔서 감사합니다.',
     sent_dt: '2026-11-06 10:15:32',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '200 (성공)',
     carrier: 'KT',
     template_code: 'KAKAO_OPEN_WELCOME'
@@ -171,12 +171,12 @@ const mockHistoryList = [
     msg_type: 'SMS',
     channel_name: '문자 (SMS)',
     receiver_name: '김영희',
-    receiver_phone: '010-3344-5566',
+    receiver_phone: '010-0000-0003',
     title: '-',
     content: '[KT몰] 김영희님, 새 단말기(갤럭시 Z플립6) 개통 3일차 안심 케어 센터: 1588-0000',
     sent_dt: '2026-11-06 10:30:10',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '1000 (성공)',
     carrier: 'SKT',
     template_code: 'SMS_CARE_D3'
@@ -186,12 +186,12 @@ const mockHistoryList = [
     msg_type: 'LMS',
     channel_name: '문자 (LMS)',
     receiver_name: '이철수',
-    receiver_phone: '010-5566-7788',
+    receiver_phone: '010-0000-0007',
     title: '[KT몰] 요금제 자유 변경 기간 안내',
     content: '[KT몰] 이철수님 안녕하세요.\n개통 100일이 경과하여 개통 시 가입하신 의무 요금제 및 유료 부가서비스를 위약금 없이 자유롭게 변경하실 수 있습니다.\n\n▶ 추천 맞춤 요금제: m.kt.com/plan\n▶ 문의: 1588-0000',
     sent_dt: '2026-11-06 11:00:05',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '1000 (성공)',
     carrier: 'LGU+',
     template_code: 'SMS_PLAN_D100'
@@ -201,7 +201,7 @@ const mockHistoryList = [
     msg_type: 'ALIMTALK',
     channel_name: '카카오 알림톡',
     receiver_name: '박민수',
-    receiver_phone: '010-2222-3333',
+    receiver_phone: '010-0000-0004',
     title: '[KT몰] 개통 1년차 단말기/배터리 점검 안내',
     content: '박민수 고객님, 단말기 개통 1년 기념 배터리 및 외관 무상 점검 쿠폰이 발급되었습니다.',
     sent_dt: '2026-11-06 11:30:00',
@@ -216,12 +216,12 @@ const mockHistoryList = [
     msg_type: 'LMS',
     channel_name: '문자 (LMS)',
     receiver_name: '정수진',
-    receiver_phone: '010-7788-9900',
+    receiver_phone: '010-0000-0005',
     title: '[KT몰] 24개월 약정 만료 사전 안내',
     content: '[KT몰] 정수진 고객님, 다음 달 24개월 선택약정이 만료됩니다. 재약정 요금 25% 할인 또는 기기변경 특별 지원금을 확인해 보세요.',
     sent_dt: '2026-11-05 14:00:21',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '1000 (성공)',
     carrier: 'KT',
     template_code: 'SMS_EXPIRE_D30'
@@ -231,12 +231,12 @@ const mockHistoryList = [
     msg_type: 'SMS',
     channel_name: '문자 (SMS)',
     receiver_name: '최동욱',
-    receiver_phone: '010-8899-0011',
+    receiver_phone: '010-0000-0006',
     title: '-',
     content: '[KT몰] 최동욱님, 새 단말기(iPhone 16 Pro) 사용에 불편한 점은 없으신가요? 고객센터: 1588-0000',
     sent_dt: '2026-11-05 10:30:12',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '1000 (성공)',
     carrier: 'SKT',
     template_code: 'SMS_CARE_D3'
@@ -246,12 +246,12 @@ const mockHistoryList = [
     msg_type: 'ALIMTALK',
     channel_name: '카카오 알림톡',
     receiver_name: '강지훈',
-    receiver_phone: '010-1234-9988',
+    receiver_phone: '010-0000-0009',
     title: '[KT몰] 포인트 소멸 예정 안내',
     content: '강지훈 고객님, 보유 중이신 KT몰 포인트 5,000P가 이달 말 소멸 예정입니다. KT몰 앱에서 사은품으로 교환하세요.',
     sent_dt: '2026-11-05 09:30:45',
     status: 'SUCCESS',
-    status_desc: '발송 성공',
+    status_desc: '발송 성공 (안전 시뮬레이션)',
     result_code: '200 (성공)',
     carrier: 'KT',
     template_code: 'KAKAO_POINT_EXP'
@@ -261,7 +261,7 @@ const mockHistoryList = [
     msg_type: 'SMS',
     channel_name: '문자 (SMS)',
     receiver_name: '한미소',
-    receiver_phone: '010-4455-6677',
+    receiver_phone: '010-0000-0010',
     title: '-',
     content: '[KT몰] 한미소님 개통을 축하드립니다. 고객센터: 1588-0000',
     sent_dt: '2026-11-04 18:20:10',
@@ -283,6 +283,12 @@ const notificationController = {
       const aligoConfig = await NotificationModel.getAligoConfig();
       const historyStats = await NotificationModel.getHistoryStats();
       const remainInfo = await AligoService.getRemain();
+      // 개통일 기준 183일 이상 경과 고객 기본 타겟 리스트 조회
+      const initialRecipientsResult = await NotificationModel.getTargetRecipients({
+        condition: 'AFTER_183D',
+        days: 183,
+        limit: 100
+      });
 
       res.render('notificationSms', {
         title: '문자 관리 (SMS/LMS)',
@@ -290,6 +296,8 @@ const notificationController = {
         templates,
         aligoConfig,
         remainInfo,
+        initialRecipients: initialRecipientsResult.items || [],
+        targetCount: initialRecipientsResult.total || 0,
         stats: {
           totalTemplates: templates.length,
           activeTemplates: templates.filter(t => t.use_yn === 'Y').length,
@@ -306,6 +314,8 @@ const notificationController = {
         templates: mockSmsTemplates,
         aligoConfig: { apiKey: '', userId: '', sender: '', testmodeYn: 'Y' },
         remainInfo: { configured: false, SMS_CNT: 0, LMS_CNT: 0, MMS_CNT: 0 },
+        initialRecipients: [],
+        targetCount: 0,
         stats: { totalTemplates: 4, activeTemplates: 4, monthlySent: 0, successRate: '100%' },
         dbStatus: db.getDbStatus()
       });
@@ -460,7 +470,7 @@ const notificationController = {
    */
   async sendBulkSms(req, res) {
     try {
-      const { receiverList, title, templateContent, templateCode, rdate, rtime } = req.body;
+      const { receiverList, title, templateContent, templateCode, rdate, rtime, testmode } = req.body;
 
       if (!receiverList || !Array.isArray(receiverList) || receiverList.length === 0) {
         return res.status(400).json({ success: false, message: '발송할 수신자 목록이 비어있습니다.' });
@@ -472,7 +482,8 @@ const notificationController = {
         templateContent,
         templateCode,
         rdate,
-        rtime
+        rtime,
+        testmode
       });
 
       return res.json({ success: true, ...result });
@@ -505,6 +516,28 @@ const notificationController = {
       return res.json(remain);
     } catch (err) {
       return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * API: 개통일 및 조건 기준 단체 발송 대상 고객 목록 조회
+   */
+  async getTargetRecipients(req, res) {
+    try {
+      const { condition = 'AFTER_183D', days = 183, keyword = '', limit = 100 } = req.query;
+      const result = await NotificationModel.getTargetRecipients({
+        condition,
+        days: parseInt(days, 10) || 183,
+        keyword,
+        limit: parseInt(limit, 10) || 100
+      });
+      return res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('getTargetRecipients error:', err);
+      return res.status(500).json({ success: false, message: '발송 대상 고객 조회 중 오류: ' + err.message });
     }
   }
 };

@@ -96,6 +96,20 @@ const AligoService = {
   },
 
   /**
+   * 통신사 비할당 가상 번호 또는 테스트 더미 번호 감지 (실제 발송 사고 원천 차단 안전가드)
+   * 010-0000-xxxx, 0100000xxxx 등 비할당 대역 판별
+   */
+  isVirtualDummyPhone(phone) {
+    if (!phone) return false;
+    const clean = String(phone).replace(/[^0-9]/g, '');
+    // 010-0000-xxxx 또는 0000 국번 대역
+    if (/^0100000\d{4}$/.test(clean)) return true;
+    if (clean.startsWith('0100000')) return true;
+    if (clean.includes('0000000') || clean === '01000000000') return true;
+    return false;
+  },
+
+  /**
    * Aligo 단일/즉시/예약 문자 발송 (Aligo 공식 sample 규격 반영)
    */
   async sendSingle({
@@ -122,6 +136,46 @@ const AligoService = {
     }
     if (!content || !content.trim()) {
       throw new Error('발송할 메시지 내용이 비어있습니다.');
+    }
+
+    // 1-1. [안전 보호장치] 가상 더미 번호(010-0000-xxxx 등) 감지 시 실제 외부 발송 원천 차단
+    if (this.isVirtualDummyPhone(cleanReceiver)) {
+      console.warn(`[AligoService:SafetyGuard] 가상 더미 번호(${cleanReceiver}) 감지 -> 실제 문자 발송 차단 및 안전 시뮬레이션 완료`);
+      
+      const safeDesc = '가상 더미 번호 안전 발송 완료 (통신망 외부 발송 원천 차단됨)';
+      const mockMsgId = 'SAFE_MOCK_' + Date.now();
+
+      // DB 로그 기록 (정상 발송 성공으로 기록하되 안전 시뮬레이션 표기)
+      const logResult = await NotificationModel.createLog({
+        msg_type: msgType,
+        sender_phone: cleanSender || '02-805-1999',
+        receiver_name: receiverName,
+        receiver_phone: cleanReceiver,
+        title: title || (msgType === 'LMS' ? '[KT몰] 알림' : '-'),
+        content,
+        template_code: templateCode,
+        status: 'SUCCESS',
+        status_desc: safeDesc,
+        result_code: '1',
+        msg_id: mockMsgId,
+        carrier: 'KT',
+        is_test: 'Y'
+      });
+
+      return {
+        success: true,
+        result_code: '1',
+        message: safeDesc,
+        raw_message: '가상 번호는 외부로 발송되지 않고 안전하게 성공 처리되었습니다.',
+        msg_id: mockMsgId,
+        success_cnt: 1,
+        error_cnt: 0,
+        msg_type: msgType,
+        byteLength,
+        testmode: true,
+        isSafeMock: true,
+        log_id: logResult ? logResult.log_id : null
+      };
     }
 
     // Aligo 계정 정보 확인
@@ -292,7 +346,8 @@ const AligoService = {
     templateContent = '',
     templateCode = null,
     rdate = '',
-    rtime = ''
+    rtime = '',
+    testmode = null
   }) {
     if (!receiverList || receiverList.length === 0) {
       throw new Error('발송할 수신자 목록이 비어있습니다.');
@@ -309,28 +364,32 @@ const AligoService = {
     for (const target of receiverList) {
       const replacedContent = this.replaceVariables(templateContent, {
         name: target.name || target.nm || '',
-        phone: target.phone || '',
+        phone: target.phone || target.receiver || '',
         model: target.model || target.model_name || '',
         date: target.date || target.opening_dt || '',
-        principal: target.principal || target.installment_principal || ''
+        principal: target.principal || target.installment_principal || '',
+        plan: target.plan || target.plan_nm || ''
       });
 
       try {
         const res = await this.sendSingle({
-          receiver: target.phone,
+          receiver: target.phone || target.receiver,
           receiverName: target.name || target.nm || '고객',
           title,
           content: replacedContent,
           templateCode,
-          isTest: false
+          isTest: testmode === 'Y',
+          rdate,
+          rtime,
+          testmode
         });
 
         if (res.success) successCount++;
         else failCount++;
-        results.push({ phone: target.phone, success: res.success, msg: res.message });
+        results.push({ phone: target.phone || target.receiver, success: res.success, msg: res.message });
       } catch (err) {
         failCount++;
-        results.push({ phone: target.phone, success: false, msg: err.message });
+        results.push({ phone: target.phone || target.receiver, success: false, msg: err.message });
       }
     }
 

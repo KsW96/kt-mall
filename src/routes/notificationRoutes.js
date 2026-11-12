@@ -15,6 +15,7 @@ router.post('/api/notifications/sms/send-test', notificationController.sendTestS
 router.post('/api/notifications/sms/send-bulk', notificationController.sendBulkSms);
 router.post('/api/notifications/sms/config', notificationController.saveConfig);
 router.get('/api/notifications/sms/remain', notificationController.getRemain);
+router.get('/api/notifications/sms/target-recipients', notificationController.getTargetRecipients);
 
 // 템플릿 관리 API
 router.post('/api/notifications/templates/save', notificationController.saveTemplate);

@@ -11,7 +11,7 @@
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
       <!-- Member Excel Upload Button -->
       <a href="/users" class="btn btn-sm btn-success">
-        <i class="bi bi-file-earmark-excel-fill me-1"></i> 회원 엑셀 업로드 (app_user)
+        <i class="bi bi-file-earmark-excel-fill me-1"></i> 회원 엑셀 업로드
       </a>
       <!-- CSV Download Button -->
       <a href="/data/download?keyword=<%= encodeURIComponent(filters.keyword || '') %>&category=<%= encodeURIComponent(filters.category || '') %>&status=<%= encodeURIComponent(filters.status || '') %>" class="btn btn-sm btn-outline-success">
@@ -48,9 +48,9 @@
         <div class="col-md-3">
           <select name="status" class="form-select form-select-sm">
             <option value="">모든 상태</option>
-            <option value="COMPLETED" <%= filters.status === 'COMPLETED' ? 'selected' : '' %>>완료 (COMPLETED)</option>
-            <option value="PENDING" <%= filters.status === 'PENDING' ? 'selected' : '' %>>대기 (PENDING)</option>
-            <option value="CANCELLED" <%= filters.status === 'CANCELLED' ? 'selected' : '' %>>취소 (CANCELLED)</option>
+            <option value="COMPLETED" <%= filters.status === 'COMPLETED' ? 'selected' : '' %>>완료</option>
+            <option value="PENDING" <%= filters.status === 'PENDING' ? 'selected' : '' %>>대기</option>
+            <option value="CANCELLED" <%= filters.status === 'CANCELLED' ? 'selected' : '' %>>취소</option>
           </select>
         </div>
 
@@ -191,7 +191,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label small fw-semibold">건명 (Title) <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold">건명 <span class="text-danger">*</span></label>
             <input type="text" name="title" class="form-control form-control-sm" required placeholder="예: 무선 기계식 키보드">
           </div>
           <div class="row g-2 mb-3">
@@ -218,9 +218,9 @@
             <div class="col-md-6">
               <label class="form-label small fw-semibold">상태</label>
               <select name="status" class="form-select form-select-sm">
-                <option value="PENDING">대기 (PENDING)</option>
-                <option value="COMPLETED">완료 (COMPLETED)</option>
-                <option value="CANCELLED">취소 (CANCELLED)</option>
+                <option value="PENDING">대기</option>
+                <option value="COMPLETED">완료</option>
+                <option value="CANCELLED">취소</option>
               </select>
             </div>
           </div>
